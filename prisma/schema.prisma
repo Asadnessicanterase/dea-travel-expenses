@@ -1,0 +1,195 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id                  String               @id @default(cuid())
+  name                String?
+  email               String?              @unique
+  emailVerified       DateTime?
+  password            String?
+  position            String?
+  image               String?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  role                UserRole             @default(USER)
+  accounts            Account[]
+  passwordResetTokens PasswordResetToken[]
+  sessions            Session[]
+  travelRequests      TravelRequest[]
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+}
+
+model BudgetSettings {
+  id          String   @id @default(cuid())
+  year        Int      @unique
+  totalBudget Float
+  createdBy   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([year])
+}
+
+model TravelRequest {
+  id                        String               @id @default(cuid())
+  userId                    String
+  name                      String
+  position                  String
+  dateOfApplication         DateTime
+  destinationCountry        String
+  destinationCity           String?
+  eventOrganiser            String
+  eventName                 String
+  travelDateFrom            DateTime
+  travelDateTo              DateTime
+  purpose                   String
+  estimatedCosts            Float
+  estimatedAccommodation    Float?
+  estimatedOther            Float?
+  estimatedOtherDescription String?
+  status                    RequestStatus        @default(PENDING)
+  approverComment           String?
+  submittedAt               DateTime             @default(now())
+  updatedAt                 DateTime             @updatedAt
+  cancelledAt               DateTime?
+  cancelledBy               String?
+  cancelledReason           String?
+  reservedAmount            Float?
+  approvals                 Approval[]
+  expenseClaims             ExpenseClaim[]
+  transportationItems       TransportationItem[]
+  user                      User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+}
+
+model TransportationItem {
+  id              String        @id @default(cuid())
+  travelRequestId String
+  description     String
+  estimatedCost   Float
+  createdAt       DateTime      @default(now())
+  travelRequest   TravelRequest @relation(fields: [travelRequestId], references: [id], onDelete: Cascade)
+
+  @@index([travelRequestId])
+}
+
+model ExpenseClaim {
+  id                    String            @id @default(cuid())
+  travelRequestId       String
+  description           String
+  amount                Float
+  accommodation         Float?
+  transportation        Float?
+  otherAmount           Float?
+  otherDescription      String?
+  date                  DateTime
+  accommodationReceipt  String?
+  transportationReceipt String?
+  otherReceipt          String?
+  status                RequestStatus     @default(PENDING)
+  approverComment       String?
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+  actualAmount          Float?
+  voucherNumber         String?           @unique
+  voucherGeneratedAt    DateTime?
+  voucherPdfPath        String?
+  expenseApprovals      ExpenseApproval[]
+  travelRequest         TravelRequest     @relation(fields: [travelRequestId], references: [id], onDelete: Cascade)
+
+  @@index([travelRequestId])
+  @@index([status])
+}
+
+model Approval {
+  id              String        @id @default(cuid())
+  travelRequestId String
+  action          String
+  comment         String?
+  approverEmail   String
+  createdAt       DateTime      @default(now())
+  travelRequest   TravelRequest @relation(fields: [travelRequestId], references: [id], onDelete: Cascade)
+
+  @@index([travelRequestId])
+}
+
+model ExpenseApproval {
+  id             String       @id @default(cuid())
+  expenseClaimId String
+  action         String
+  comment        String?
+  approverEmail  String
+  createdAt      DateTime     @default(now())
+  expenseClaim   ExpenseClaim @relation(fields: [expenseClaimId], references: [id], onDelete: Cascade)
+
+  @@index([expenseClaimId])
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  DENIED
+  AMENDMENT_REQUESTED
+  CLOSED
+  CANCELLED
+}
+
+enum UserRole {
+  USER
+  APPROVER
+  ADMIN
+}

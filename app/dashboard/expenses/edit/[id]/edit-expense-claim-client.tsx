@@ -1,0 +1,465 @@
+
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { AlertCircle, ArrowLeft, Upload, X } from "lucide-react";
+import toast from "react-hot-toast";
+
+interface ExpenseClaim {
+  id: string;
+  description: string;
+  amount: number;
+  accommodation?: number | null;
+  transportation?: number | null;
+  otherAmount?: number | null;
+  otherDescription?: string | null;
+  date: string;
+  accommodationReceipt?: string | null;
+  transportationReceipt?: string | null;
+  otherReceipt?: string | null;
+  approverComment?: string | null;
+  travelRequest: {
+    id: string;
+    eventName: string;
+    destinationCountry: string;
+    destinationCity?: string | null;
+  };
+}
+
+export default function EditExpenseClaimClient({ expenseClaim }: { expenseClaim: ExpenseClaim }) {
+  const router = useRouter();
+  const [submitting, setSubmitting] = useState(false);
+
+  const [description, setDescription] = useState(expenseClaim.description);
+  const [accommodation, setAccommodation] = useState(expenseClaim.accommodation?.toString() || "");
+  const [transportation, setTransportation] = useState(expenseClaim.transportation?.toString() || "");
+  const [otherAmount, setOtherAmount] = useState(expenseClaim.otherAmount?.toString() || "");
+  const [otherDescription, setOtherDescription] = useState(expenseClaim.otherDescription || "");
+  const [date, setDate] = useState(expenseClaim.date.split('T')[0]);
+
+  const [accommodationFile, setAccommodationFile] = useState<File | null>(null);
+  const [transportationFile, setTransportationFile] = useState<File | null>(null);
+  const [otherFile, setOtherFile] = useState<File | null>(null);
+
+  const [keepExistingAccommodationReceipt, setKeepExistingAccommodationReceipt] = useState(true);
+  const [keepExistingTransportationReceipt, setKeepExistingTransportationReceipt] = useState(true);
+  const [keepExistingOtherReceipt, setKeepExistingOtherReceipt] = useState(true);
+
+  const calculateTotal = () => {
+    const acc = parseFloat(accommodation) || 0;
+    const trans = parseFloat(transportation) || 0;
+    const other = parseFloat(otherAmount) || 0;
+    return acc + trans + other;
+  };
+
+  const handleFileChange = (
+    type: 'accommodation' | 'transportation' | 'other',
+    setter: (file: File | null) => void
+  ) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const selectedFile = e.target.files[0];
+      
+      // Validate file type (PDF or common image formats)
+      const allowedTypes = [
+        'application/pdf',
+        'image/jpeg',
+        'image/jpg', 
+        'image/png',
+        'image/webp'
+      ];
+      
+      if (!allowedTypes.includes(selectedFile.type)) {
+        toast.error("Please select a PDF or image file (JPG, PNG, WebP)");
+        e.target.value = '';
+        return;
+      }
+      
+      // Validate file size (10MB limit)
+      const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+      if (selectedFile.size > maxSize) {
+        toast.error("File size must be less than 10MB");
+        e.target.value = '';
+        return;
+      }
+      
+      setter(selectedFile);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const total = calculateTotal();
+    if (total <= 0) {
+      toast.error("Total amount must be greater than zero");
+      return;
+    }
+
+    // Validate that at least one receipt is provided or kept from existing
+    const hasAccommodationReceipt = keepExistingAccommodationReceipt || accommodationFile !== null;
+    const hasTransportationReceipt = keepExistingTransportationReceipt || transportationFile !== null;
+    const hasOtherReceipt = keepExistingOtherReceipt || otherFile !== null;
+
+    const accommodationAmount = parseFloat(accommodation) || 0;
+    const transportationAmount = parseFloat(transportation) || 0;
+    const otherAmountValue = parseFloat(otherAmount) || 0;
+
+    if (accommodationAmount > 0 && !hasAccommodationReceipt) {
+      toast.error("Please upload accommodation receipt");
+      return;
+    }
+
+    if (transportationAmount > 0 && !hasTransportationReceipt) {
+      toast.error("Please upload transportation receipt");
+      return;
+    }
+
+    if (otherAmountValue > 0 && !hasOtherReceipt) {
+      toast.error("Please upload receipt for other expenses");
+      return;
+    }
+
+    setSubmitting(true);
+
+    try {
+      const formData = new FormData();
+      // Use event name + "Expenses" as default if description is empty
+      const descriptionValue = description.trim() || `${expenseClaim.travelRequest.eventName} Expenses`;
+      formData.append("description", descriptionValue);
+      formData.append("amount", total.toString());
+      formData.append("accommodation", accommodation || "0");
+      formData.append("transportation", transportation || "0");
+      formData.append("otherAmount", otherAmount || "0");
+      formData.append("otherDescription", otherDescription);
+      formData.append("date", date);
+
+      // Handle file uploads and existing receipts
+      if (accommodationFile) {
+        formData.append("accommodationReceipt", accommodationFile);
+      } else {
+        formData.append("keepAccommodationReceipt", keepExistingAccommodationReceipt.toString());
+      }
+
+      if (transportationFile) {
+        formData.append("transportationReceipt", transportationFile);
+      } else {
+        formData.append("keepTransportationReceipt", keepExistingTransportationReceipt.toString());
+      }
+
+      if (otherFile) {
+        formData.append("otherReceipt", otherFile);
+      } else {
+        formData.append("keepOtherReceipt", keepExistingOtherReceipt.toString());
+      }
+
+      const response = await fetch(`/api/expense-claims/${expenseClaim.id}/resubmit`, {
+        method: "PUT",
+        body: formData,
+      });
+
+      if (response.ok) {
+        toast.success("Expense claim resubmitted successfully!");
+        router.push("/dashboard?type=expenses");
+      } else {
+        const data = await response.json();
+        toast.error(data.error || "Failed to resubmit expense claim");
+      }
+    } catch (error) {
+      toast.error("Failed to resubmit expense claim");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="container mx-auto max-w-4xl px-4 py-8">
+      <div className="mb-6">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => router.push("/dashboard?type=expenses")}
+          className="mb-4"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Expense Claims
+        </Button>
+        
+        <h1 className="text-3xl font-bold text-gray-900">Resubmit Expense Claim</h1>
+        <p className="text-gray-600 mt-1">
+          Update your expense claim based on the approver's feedback
+        </p>
+      </div>
+
+      {expenseClaim.approverComment && (
+        <Card className="mb-6 border-amber-500 bg-amber-50">
+          <CardHeader>
+            <div className="flex items-start gap-2">
+              <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5" />
+              <div>
+                <CardTitle className="text-lg text-amber-900">Approver's Feedback</CardTitle>
+                <CardDescription className="text-amber-800 mt-2">
+                  {expenseClaim.approverComment}
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+        </Card>
+      )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Edit Expense Details</CardTitle>
+          <CardDescription>
+            Trip: {expenseClaim.travelRequest.eventName} -{" "}
+            {expenseClaim.travelRequest.destinationCity
+              ? `${expenseClaim.travelRequest.destinationCity}, ${expenseClaim.travelRequest.destinationCountry}`
+              : expenseClaim.travelRequest.destinationCountry}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="description">Description (Optional)</Label>
+              <Textarea
+                id="description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder={`Default: ${expenseClaim.travelRequest.eventName} Expenses`}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="date">Claim Submission Date *</Label>
+              <Input
+                id="date"
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                max={new Date().toISOString().split('T')[0]}
+                required
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Accommodation */}
+              <div className="space-y-2">
+                <Label htmlFor="accommodation">Accommodation (€)</Label>
+                <Input
+                  id="accommodation"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={accommodation}
+                  onChange={(e) => setAccommodation(e.target.value)}
+                  placeholder="0.00"
+                />
+                
+                {expenseClaim.accommodationReceipt && (
+                  <div className="mt-2">
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <input
+                        type="checkbox"
+                        id="keepAccommodation"
+                        checked={keepExistingAccommodationReceipt}
+                        onChange={(e) => setKeepExistingAccommodationReceipt(e.target.checked)}
+                        className="rounded"
+                      />
+                      <label htmlFor="keepAccommodation">Keep existing receipt</label>
+                    </div>
+                  </div>
+                )}
+
+                {(!expenseClaim.accommodationReceipt || !keepExistingAccommodationReceipt) && (
+                  <div className="mt-2">
+                    <Label htmlFor="accommodationReceipt" className="text-sm">
+                      {accommodationFile ? "Receipt uploaded" : "Upload Receipt (PDF or Image)"}
+                    </Label>
+                    <div className="mt-1 flex items-center gap-2">
+                      <Input
+                        id="accommodationReceipt"
+                        type="file"
+                        accept="application/pdf,image/jpeg,image/jpg,image/png,image/webp"
+                        onChange={handleFileChange('accommodation', setAccommodationFile)}
+                        className="flex-1"
+                      />
+                      {accommodationFile && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setAccommodationFile(null)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">Max 10MB - PDF, JPG, PNG, or WebP</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Transportation */}
+              <div className="space-y-2">
+                <Label htmlFor="transportation">Transportation (€)</Label>
+                <Input
+                  id="transportation"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={transportation}
+                  onChange={(e) => setTransportation(e.target.value)}
+                  placeholder="0.00"
+                />
+                
+                {expenseClaim.transportationReceipt && (
+                  <div className="mt-2">
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <input
+                        type="checkbox"
+                        id="keepTransportation"
+                        checked={keepExistingTransportationReceipt}
+                        onChange={(e) => setKeepExistingTransportationReceipt(e.target.checked)}
+                        className="rounded"
+                      />
+                      <label htmlFor="keepTransportation">Keep existing receipt</label>
+                    </div>
+                  </div>
+                )}
+
+                {(!expenseClaim.transportationReceipt || !keepExistingTransportationReceipt) && (
+                  <div className="mt-2">
+                    <Label htmlFor="transportationReceipt" className="text-sm">
+                      {transportationFile ? "Receipt uploaded" : "Upload Receipt (PDF or Image)"}
+                    </Label>
+                    <div className="mt-1 flex items-center gap-2">
+                      <Input
+                        id="transportationReceipt"
+                        type="file"
+                        accept="application/pdf,image/jpeg,image/jpg,image/png,image/webp"
+                        onChange={handleFileChange('transportation', setTransportationFile)}
+                        className="flex-1"
+                      />
+                      {transportationFile && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setTransportationFile(null)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">Max 10MB - PDF, JPG, PNG, or WebP</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Other Expenses */}
+            <div className="space-y-2">
+              <Label htmlFor="otherAmount">Other Expenses (€)</Label>
+              <Input
+                id="otherAmount"
+                type="number"
+                step="0.01"
+                min="0"
+                value={otherAmount}
+                onChange={(e) => setOtherAmount(e.target.value)}
+                placeholder="0.00"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="otherDescription">Other Expenses Description</Label>
+              <Input
+                id="otherDescription"
+                type="text"
+                value={otherDescription}
+                onChange={(e) => setOtherDescription(e.target.value)}
+                placeholder="E.g., Meals, Parking, etc."
+              />
+            </div>
+
+            {expenseClaim.otherReceipt && (
+              <div className="mt-2">
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <input
+                    type="checkbox"
+                    id="keepOther"
+                    checked={keepExistingOtherReceipt}
+                    onChange={(e) => setKeepExistingOtherReceipt(e.target.checked)}
+                    className="rounded"
+                  />
+                  <label htmlFor="keepOther">Keep existing other expenses receipt</label>
+                </div>
+              </div>
+            )}
+
+            {(!expenseClaim.otherReceipt || !keepExistingOtherReceipt) && parseFloat(otherAmount) > 0 && (
+              <div className="space-y-2">
+                <Label htmlFor="otherReceipt" className="text-sm">
+                  {otherFile ? "Receipt uploaded" : "Upload Other Expenses Receipt (PDF or Image)"}
+                </Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="otherReceipt"
+                    type="file"
+                    accept="application/pdf,image/jpeg,image/jpg,image/png,image/webp"
+                    onChange={handleFileChange('other', setOtherFile)}
+                    className="flex-1"
+                  />
+                  {otherFile && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setOtherFile(null)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+                <p className="text-xs text-gray-500">Max 10MB - PDF, JPG, PNG, or WebP</p>
+              </div>
+            )}
+
+            {/* Total Amount Display */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-gray-700">Total Amount:</span>
+                <span className="text-2xl font-bold text-blue-600">
+                  €{calculateTotal().toFixed(2)}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex gap-4 pt-4">
+              <Button
+                type="submit"
+                className="flex-1"
+                disabled={submitting || calculateTotal() <= 0}
+              >
+                {submitting ? "Signing and Resubmitting..." : "Sign and Resubmit Expense Claim"}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => router.push("/dashboard?type=expenses")}
+                disabled={submitting}
+              >
+                Cancel
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

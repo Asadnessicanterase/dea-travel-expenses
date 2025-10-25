@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir \"c:\\Users\\conra\\Desktop\\New folder\\app\\lib\")"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

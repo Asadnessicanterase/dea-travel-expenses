@@ -1,0 +1,20 @@
+# Dependency folders
+node_modules/
+.next/
+
+# Environment and secrets
+.env
+.env.local
+.env.production
+.env.development
+
+# OS and editor junk
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Build outputs
+out/
+dist/
+coverage/
