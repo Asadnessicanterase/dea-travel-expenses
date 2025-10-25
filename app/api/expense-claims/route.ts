@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { uploadFile } from "@/lib/s3";
+import { uploadFile } from "@/lib/storage";
 import { formatDate } from "@/lib/date-utils";
 
 export const dynamic = "force-dynamic";

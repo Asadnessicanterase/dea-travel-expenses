@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { generateVoucherNumber } from "@/lib/budget";
 import { generatePaymentVoucherWithReceipts } from "@/lib/voucher-pdf";
-import { downloadFile } from "@/lib/s3";
+import { downloadFile } from "@/lib/storage";
 import { formatDateDDMMYYYY } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";

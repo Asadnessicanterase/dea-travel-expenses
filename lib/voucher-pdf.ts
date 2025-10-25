@@ -1,5 +1,5 @@
 import { jsPDF } from "jspdf";
-import { uploadFile } from "./s3";
+import { uploadFile } from "./storage";
 import { processMultipleReceipts, ReceiptInfo } from "./receipt-processor";
 import { mergePDFs, PDFSection } from "./pdf-merger";
 import crypto from "crypto";
