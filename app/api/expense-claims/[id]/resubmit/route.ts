@@ -5,10 +5,9 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { uploadFile, deleteFile } from "@/lib/storage";
 import { formatDate } from "@/lib/date-utils";
+import { getApproverEmail } from "@/lib/approvers";
 
 export const dynamic = "force-dynamic";
-
-const APPROVER_EMAIL = "conrad.kraft@digital-euro-association.de";
 
 export async function PUT(
   request: Request,
@@ -248,15 +247,20 @@ export async function PUT(
       </div>
     `;
 
-    await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/send-email`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        to: APPROVER_EMAIL,
-        subject: `Expense Claim Resubmitted - ${eventName}`,
-        html: emailHtml
-      })
-    });
+    // Send email to department approver (via travel request's department)
+    const approverEmail = await getApproverEmail(expenseClaim.travelRequest.departmentId);
+
+    if (approverEmail) {
+      await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/send-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: approverEmail,
+          subject: `Expense Claim Resubmitted - ${eventName}`,
+          html: emailHtml
+        })
+      });
+    }
 
     return NextResponse.json({ 
       message: "Expense claim resubmitted successfully",

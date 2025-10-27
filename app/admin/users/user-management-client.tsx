@@ -40,6 +40,11 @@ import {
 import Link from "next/link";
 import toast from "react-hot-toast";
 
+interface Department {
+  id: string;
+  name: string;
+}
+
 interface User {
   id: string;
   name: string | null;
@@ -47,17 +52,20 @@ interface User {
   position: string | null;
   role: string;
   createdAt: string;
+  departmentId: string | null;
+  department: Department | null;
 }
 
 export default function UserManagementClient() {
   const [users, setUsers] = useState<User[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showResetPasswordDialog, setShowResetPasswordDialog] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  
+
   // Form states
   const [formData, setFormData] = useState({
     name: "",
@@ -65,12 +73,14 @@ export default function UserManagementClient() {
     position: "",
     role: "USER",
     password: "",
+    departmentId: "",
   });
 
   const [newPassword, setNewPassword] = useState("");
 
   useEffect(() => {
     fetchUsers();
+    fetchDepartments();
   }, []);
 
   const fetchUsers = async () => {
@@ -90,6 +100,18 @@ export default function UserManagementClient() {
     }
   };
 
+  const fetchDepartments = async () => {
+    try {
+      const response = await fetch("/api/admin/departments");
+      if (response.ok) {
+        const data = await response.json();
+        setDepartments(data.departments || []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch departments:", error);
+    }
+  };
+
   const handleAddUser = async () => {
     if (!formData.name || !formData.email || !formData.password) {
       toast.error("Please fill in all required fields");
@@ -106,7 +128,7 @@ export default function UserManagementClient() {
       if (response.ok) {
         toast.success("User created successfully");
         setShowAddDialog(false);
-        setFormData({ name: "", email: "", position: "", role: "USER", password: "" });
+        setFormData({ name: "", email: "", position: "", role: "USER", password: "", departmentId: "" });
         fetchUsers();
       } else {
         const error = await response.json();
@@ -133,6 +155,7 @@ export default function UserManagementClient() {
           email: formData.email,
           position: formData.position,
           role: formData.role,
+          departmentId: formData.departmentId || null,
         }),
       });
 
@@ -210,6 +233,7 @@ export default function UserManagementClient() {
       position: user.position || "",
       role: user.role,
       password: "",
+      departmentId: user.departmentId || "",
     });
     setShowEditDialog(true);
   };
@@ -288,6 +312,7 @@ export default function UserManagementClient() {
                   <TableHead>Email</TableHead>
                   <TableHead>Position</TableHead>
                   <TableHead>Role</TableHead>
+                  <TableHead>Department</TableHead>
                   <TableHead>Created</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -299,6 +324,13 @@ export default function UserManagementClient() {
                     <TableCell>{user.email}</TableCell>
                     <TableCell>{user.position || "-"}</TableCell>
                     <TableCell>{getRoleBadge(user.role)}</TableCell>
+                    <TableCell>
+                      {user.department ? (
+                        <span className="text-sm">{user.department.name}</span>
+                      ) : (
+                        <span className="text-gray-400 text-sm">—</span>
+                      )}
+                    </TableCell>
                     <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
@@ -388,6 +420,30 @@ export default function UserManagementClient() {
                   </SelectContent>
                 </Select>
               </div>
+              {formData.role !== "ADMIN" && (
+                <div className="grid gap-2">
+                  <Label htmlFor="department">Department (Optional)</Label>
+                  <Select
+                    value={formData.departmentId || "none"}
+                    onValueChange={(value) => setFormData({ ...formData, departmentId: value === "none" ? "" : value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select department" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No Department</SelectItem>
+                      {departments.map((dept) => (
+                        <SelectItem key={dept.id} value={dept.id}>
+                          {dept.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-sm text-gray-500">
+                    ADMIN users cannot be assigned to departments
+                  </p>
+                </div>
+              )}
               <div className="grid gap-2">
                 <Label htmlFor="password">Password *</Label>
                 <Input
@@ -459,6 +515,30 @@ export default function UserManagementClient() {
                   </SelectContent>
                 </Select>
               </div>
+              {formData.role !== "ADMIN" && (
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-department">Department</Label>
+                  <Select
+                    value={formData.departmentId || "none"}
+                    onValueChange={(value) => setFormData({ ...formData, departmentId: value === "none" ? "" : value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select department" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No Department</SelectItem>
+                      {departments.map((dept) => (
+                        <SelectItem key={dept.id} value={dept.id}>
+                          {dept.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-sm text-gray-500">
+                    ADMIN users cannot be assigned to departments
+                  </p>
+                </div>
+              )}
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setShowEditDialog(false)}>

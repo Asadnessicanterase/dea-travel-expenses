@@ -25,6 +25,13 @@ export async function GET() {
         position: true,
         role: true,
         createdAt: true,
+        departmentId: true,
+        department: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
       },
       orderBy: {
         createdAt: "desc",
@@ -54,7 +61,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { name, email, position, role, password } = body;
+    const { name, email, position, role, password, departmentId } = body;
 
     if (!name || !email || !password) {
       return NextResponse.json(
@@ -84,6 +91,7 @@ export async function POST(request: Request) {
         position: position || "",
         role: role || "USER",
         password: hashedPassword,
+        departmentId: (role !== "ADMIN" && departmentId) ? departmentId : null,
       },
       select: {
         id: true,
@@ -92,6 +100,7 @@ export async function POST(request: Request) {
         position: true,
         role: true,
         createdAt: true,
+        departmentId: true,
       },
     });
 

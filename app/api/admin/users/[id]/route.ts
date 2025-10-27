@@ -20,7 +20,7 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { name, email, position, role } = body;
+    const { name, email, position, role, departmentId } = body;
 
     if (!name || !email) {
       return NextResponse.json(
@@ -48,6 +48,7 @@ export async function PUT(
         email,
         position: position || "",
         role: role || "USER",
+        departmentId: (role !== "ADMIN" && departmentId) ? departmentId : null,
       },
       select: {
         id: true,
@@ -56,6 +57,7 @@ export async function PUT(
         position: true,
         role: true,
         createdAt: true,
+        departmentId: true,
       },
     });
 

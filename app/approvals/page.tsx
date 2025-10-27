@@ -3,8 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import ApprovalsClient from "./approvals-client";
-
-const APPROVER_EMAIL = "conrad.kraft@digital-euro-association.de";
+import { isApproverOrAdmin } from "@/lib/approvers";
 
 export default async function ApprovalsPage() {
   const session = await getServerSession(authOptions);
@@ -13,8 +12,12 @@ export default async function ApprovalsPage() {
     redirect("/login");
   }
 
-  // Check if user is approver
-  if ((session.user as any).role !== "APPROVER" && session.user?.email !== APPROVER_EMAIL) {
+  const userId = (session.user as any).id;
+
+  // Check if user is approver or admin (department-aware)
+  const canAccessApprovals = await isApproverOrAdmin(userId);
+
+  if (!canAccessApprovals) {
     redirect("/dashboard");
   }
 

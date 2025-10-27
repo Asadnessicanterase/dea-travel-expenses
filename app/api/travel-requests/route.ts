@@ -3,10 +3,9 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { getApprovalFilter, getApproverEmail } from "@/lib/approvers";
 
 export const dynamic = "force-dynamic";
-
-const APPROVER_EMAIL = "conrad.kraft@digital-euro-association.de";
 
 // Helper function to format dates as dd/mm/yyyy
 function formatDate(date: string | Date): string {
@@ -20,7 +19,7 @@ function formatDate(date: string | Date): string {
 export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -28,13 +27,16 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
     const userId = (session.user as any).id;
-    const userEmail = session.user.email;
+    const userRole = (session.user as any).role;
 
     let where: any = {};
 
-    // If user is approver (by role or email), show all requests; otherwise, show only their own
-    const isApprover = (session.user as any).role === "APPROVER" || userEmail === APPROVER_EMAIL;
-    if (!isApprover) {
+    // If user is approver or admin, show requests based on department filter
+    if (userRole === "APPROVER" || userRole === "ADMIN") {
+      const approvalFilter = await getApprovalFilter(userId);
+      where = { ...where, ...approvalFilter };
+    } else {
+      // Regular users see only their own requests
       where.userId = userId;
     }
 
@@ -50,6 +52,12 @@ export async function GET(request: Request) {
             name: true,
             email: true,
             position: true
+          }
+        },
+        department: {
+          select: {
+            id: true,
+            name: true
           }
         },
         expenseClaims: true,
@@ -114,13 +122,16 @@ export async function POST(request: Request) {
 
     const userId = (session.user as any).id;
 
-    // Get user info for email
+    // Get user info including department for routing
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { position: true }
+      select: {
+        position: true,
+        departmentId: true
+      }
     });
 
-    // Create the travel request with transportation items
+    // Create the travel request with transportation items and department
     const travelRequest = await prisma.travelRequest.create({
       data: {
         userId,
@@ -139,6 +150,7 @@ export async function POST(request: Request) {
         estimatedOther: estimatedOther ? parseFloat(estimatedOther.toString()) : null,
         estimatedOtherDescription: estimatedOtherDescription || null,
         status: "PENDING",
+        departmentId: user?.departmentId || null, // Auto-populate from user's department
         transportationItems: {
           create: (transportationItems || []).map((item: any) => ({
             description: item.description,
@@ -148,36 +160,40 @@ export async function POST(request: Request) {
       }
     });
 
-    // Send email notification to approver
-    const approvalLink = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/approvals`;
-    const destinationText = destinationCity 
-      ? `${destinationCity}, ${destinationCountry}` 
-      : destinationCountry;
-    const emailHtml = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #2563eb;">New Travel Request Submitted</h2>
-        <p><strong>Submitted by:</strong> ${name}</p>
-        <p><strong>Position:</strong> ${user?.position || position}</p>
-        <p><strong>Destination:</strong> ${destinationText}</p>
-        <p><strong>Event:</strong> ${eventName}</p>
-        <p><strong>Travel Dates:</strong> ${formatDate(travelDateFrom)} - ${formatDate(travelDateTo)}</p>
-        <p><strong>Estimated Costs:</strong> €${estimatedCosts}</p>
-        <p><strong>Purpose:</strong> ${purpose}</p>
-        <div style="margin-top: 20px;">
-          <a href="${approvalLink}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">Review Request</a>
-        </div>
-      </div>
-    `;
+    // Send email notification to department approver or global approver
+    const approverEmail = await getApproverEmail(user?.departmentId);
 
-    await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/send-email`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        to: APPROVER_EMAIL,
-        subject: `New Travel Request: ${destinationCountry} - ${name}`,
-        html: emailHtml
-      })
-    });
+    if (approverEmail) {
+      const approvalLink = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/approvals`;
+      const destinationText = destinationCity
+        ? `${destinationCity}, ${destinationCountry}`
+        : destinationCountry;
+      const emailHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #2563eb;">New Travel Request Submitted</h2>
+          <p><strong>Submitted by:</strong> ${name}</p>
+          <p><strong>Position:</strong> ${user?.position || position}</p>
+          <p><strong>Destination:</strong> ${destinationText}</p>
+          <p><strong>Event:</strong> ${eventName}</p>
+          <p><strong>Travel Dates:</strong> ${formatDate(travelDateFrom)} - ${formatDate(travelDateTo)}</p>
+          <p><strong>Estimated Costs:</strong> €${estimatedCosts}</p>
+          <p><strong>Purpose:</strong> ${purpose}</p>
+          <div style="margin-top: 20px;">
+            <a href="${approvalLink}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">Review Request</a>
+          </div>
+        </div>
+      `;
+
+      await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/send-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: approverEmail,
+          subject: `New Travel Request: ${destinationCountry} - ${name}`,
+          html: emailHtml
+        })
+      });
+    }
 
     return NextResponse.json({ travelRequest });
   } catch (error) {

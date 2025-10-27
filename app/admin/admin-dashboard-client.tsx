@@ -3,16 +3,17 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { 
-  Users, 
-  FileText, 
-  Euro, 
+import {
+  Users,
+  FileText,
+  Euro,
   TrendingUp,
   Shield,
   CheckCircle,
   Clock,
   XCircle,
-  AlertCircle
+  AlertCircle,
+  Building2
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -155,11 +156,17 @@ export default function AdminDashboardClient() {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
           <Link href="/admin/users">
             <Button className="w-full h-20 text-lg" variant="default">
               <Users className="mr-2 h-6 w-6" />
               Manage Users
+            </Button>
+          </Link>
+          <Link href="/admin/departments">
+            <Button className="w-full h-20 text-lg" variant="default">
+              <Building2 className="mr-2 h-6 w-6" />
+              Departments
             </Button>
           </Link>
           <Link href="/admin/budget">

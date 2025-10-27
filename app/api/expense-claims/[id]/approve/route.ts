@@ -6,6 +6,7 @@ import { generateVoucherNumber } from "@/lib/budget";
 import { generatePaymentVoucherWithReceipts } from "@/lib/voucher-pdf";
 import { downloadFile } from "@/lib/storage";
 import { formatDateDDMMYYYY } from "@/lib/utils";
+import { canUserApprove } from "@/lib/approvers";
 
 export const dynamic = "force-dynamic";
 
@@ -19,17 +20,7 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Identify the approver dynamically
-    const approverEmail = session.user.email!;
-    const approverUser = await prisma.user.findUnique({
-      where: { email: approverEmail },
-    });
-
-    const isApprover =
-      approverUser?.role === "APPROVER" || approverUser?.role === "ADMIN";
-    if (!isApprover) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+    const userId = (session.user as any).id;
 
     const body = await request.json();
     const { action, comment } = body; // APPROVE, DENY, or REQUEST_AMENDMENT
@@ -49,6 +40,15 @@ export async function POST(
       return NextResponse.json(
         { error: "Expense claim not found" },
         { status: 404 }
+      );
+    }
+
+    // Check if user can approve this expense claim (department-aware via travel request)
+    const canApprove = await canUserApprove(userId, expenseClaim.travelRequest.departmentId);
+    if (!canApprove) {
+      return NextResponse.json(
+        { error: "Forbidden - You cannot approve this expense claim" },
+        { status: 403 }
       );
     }
 

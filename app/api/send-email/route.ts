@@ -3,17 +3,9 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import nodemailer from "nodemailer";
 import { PrismaClient } from "@prisma/client";
+import { getApproverEmail as getDepartmentApproverEmail } from "@/lib/approvers";
 
 const prisma = new PrismaClient();
-
-// Dynamically find the approver’s email
-async function getApproverEmail() {
-  const approver = await prisma.user.findFirst({
-    where: { role: "APPROVER" },
-    select: { email: true },
-  });
-  return approver?.email || process.env.DEFAULT_APPROVER_EMAIL;
-}
 
 export async function POST(request: Request) {
   try {
@@ -21,10 +13,10 @@ export async function POST(request: Request) {
 
     // Allow unauthenticated calls for system emails
     const body = await request.json();
-    const { to, subject, html } = body;
+    const { to, subject, html, departmentId } = body;
 
-    // If no explicit recipient is passed, fall back to the approver
-    const recipient = to || (await getApproverEmail());
+    // If no explicit recipient is passed, fall back to department approver (or global approver)
+    const recipient = to || (await getDepartmentApproverEmail(departmentId));
 
     if (!recipient || !subject || !html) {
       return NextResponse.json(

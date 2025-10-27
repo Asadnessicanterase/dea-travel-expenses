@@ -5,15 +5,14 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { uploadFile } from "@/lib/storage";
 import { formatDate } from "@/lib/date-utils";
+import { getApprovalFilter, getApproverEmail } from "@/lib/approvers";
 
 export const dynamic = "force-dynamic";
-
-const APPROVER_EMAIL = "conrad.kraft@digital-euro-association.de";
 
 export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -21,15 +20,16 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
     const userId = (session.user as any).id;
-    const userEmail = session.user.email;
-    
-    // Check if user is approver (by role or email)
-    const isApprover = (session.user as any).role === "APPROVER" || userEmail === APPROVER_EMAIL;
+    const userRole = (session.user as any).role;
 
     let where: any = {};
 
-    // If user is approver, show all expense claims; otherwise, show only their own
-    if (!isApprover) {
+    // If user is approver or admin, filter by department (via travel request)
+    if (userRole === "APPROVER" || userRole === "ADMIN") {
+      const approvalFilter = await getApprovalFilter(userId);
+      where.travelRequest = approvalFilter;
+    } else {
+      // Regular users see only their own expense claims
       where.travelRequest = {
         userId: userId
       };
@@ -49,6 +49,12 @@ export async function GET(request: Request) {
                 name: true,
                 email: true,
                 position: true
+              }
+            },
+            department: {
+              select: {
+                id: true,
+                name: true
               }
             },
             transportationItems: true
@@ -208,40 +214,43 @@ export async function POST(request: Request) {
       }
     });
 
-    // Send email notification to approver
-    const APPROVER_EMAIL = "conrad.kraft@digital-euro-association.de";
-    const approvalLink = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/approvals?tab=expenses`;
-    
-    const eventName = travelRequest.eventName || "Event";
-    
-    const emailHtml = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #2563eb;">New Expense Claim Submitted</h2>
-        <p><strong>Submitted by:</strong> ${session.user?.name}</p>
-        <p><strong>Event:</strong> ${eventName}</p>
-        ${description ? `<p><strong>Description:</strong> ${description}</p>` : ''}
-        <p><strong>Total Amount:</strong> €${parseFloat(amount).toFixed(2)}</p>
-        ${accommodation ? `<p><strong>Accommodation:</strong> €${parseFloat(accommodation).toFixed(2)}</p>` : ''}
-        ${transportation ? `<p><strong>Transportation:</strong> €${parseFloat(transportation).toFixed(2)}</p>` : ''}
-        ${otherAmount ? `<p><strong>Other (${otherDescription || 'N/A'}):</strong> €${parseFloat(otherAmount).toFixed(2)}</p>` : ''}
-        <p><strong>Date:</strong> ${formatDate(date)}</p>
-        <div style="margin-top: 20px;">
-          <a href="${approvalLink}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">Review Expense Claim</a>
-        </div>
-      </div>
-    `;
+    // Send email notification to department approver (via travel request's department)
+    const approverEmail = await getApproverEmail(travelRequest.departmentId);
 
-    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
-    const emailSubject = 'New Expense Claim - ' + eventName;
-    await fetch(baseUrl + '/api/send-email', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        to: APPROVER_EMAIL,
-        subject: emailSubject,
-        html: emailHtml
-      })
-    });
+    if (approverEmail) {
+      const approvalLink = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/approvals?tab=expenses`;
+
+      const eventName = travelRequest.eventName || "Event";
+
+      const emailHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #2563eb;">New Expense Claim Submitted</h2>
+          <p><strong>Submitted by:</strong> ${session.user?.name}</p>
+          <p><strong>Event:</strong> ${eventName}</p>
+          ${description ? `<p><strong>Description:</strong> ${description}</p>` : ''}
+          <p><strong>Total Amount:</strong> €${parseFloat(amount).toFixed(2)}</p>
+          ${accommodation ? `<p><strong>Accommodation:</strong> €${parseFloat(accommodation).toFixed(2)}</p>` : ''}
+          ${transportation ? `<p><strong>Transportation:</strong> €${parseFloat(transportation).toFixed(2)}</p>` : ''}
+          ${otherAmount ? `<p><strong>Other (${otherDescription || 'N/A'}):</strong> €${parseFloat(otherAmount).toFixed(2)}</p>` : ''}
+          <p><strong>Date:</strong> ${formatDate(date)}</p>
+          <div style="margin-top: 20px;">
+            <a href="${approvalLink}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">Review Expense Claim</a>
+          </div>
+        </div>
+      `;
+
+      const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+      const emailSubject = 'New Expense Claim - ' + eventName;
+      await fetch(baseUrl + '/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: approverEmail,
+          subject: emailSubject,
+          html: emailHtml
+        })
+      });
+    }
 
     return NextResponse.json({ expenseClaim });
   } catch (error) {

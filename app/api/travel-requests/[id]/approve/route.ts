@@ -4,8 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { checkBudgetAvailability } from "@/lib/budget";
-
-const APPROVER_EMAIL = "conrad.kraft@digital-euro-association.de";
+import { canUserApprove } from "@/lib/approvers";
 
 export async function POST(
   request: Request,
@@ -13,16 +12,12 @@ export async function POST(
 ) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Check if user is approver (by role or email)
-    const isApprover = (session.user as any).role === "APPROVER" || session.user.email === APPROVER_EMAIL;
-    if (!isApprover) {
-      return NextResponse.json({ error: "Forbidden - Not an approver" }, { status: 403 });
-    }
+    const userId = (session.user as any).id;
 
     const body = await request.json();
     const { action, comment } = body; // action: "APPROVE", "DENY", "REQUEST_AMENDMENT"
@@ -41,6 +36,15 @@ export async function POST(
 
     if (!travelRequest) {
       return NextResponse.json({ error: "Request not found" }, { status: 404 });
+    }
+
+    // Check if user can approve this specific request (department-aware)
+    const canApprove = await canUserApprove(userId, travelRequest.departmentId);
+    if (!canApprove) {
+      return NextResponse.json(
+        { error: "Forbidden - You cannot approve this request" },
+        { status: 403 }
+      );
     }
 
     // Map action to status
@@ -88,7 +92,7 @@ export async function POST(
         travelRequestId: params.id,
         action,
         comment: comment || null,
-        approverEmail: session.user.email || APPROVER_EMAIL
+        approverEmail: session.user.email || ""
       }
     });
 
