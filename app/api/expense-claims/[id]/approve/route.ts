@@ -20,6 +20,12 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // --- FIX: define approverUser and approverEmail ---
+    const approverUser = await prisma.user.findUnique({
+      where: { id: (session.user as any).id },
+    });
+    const approverEmail = approverUser?.email || (session.user as any).email;
+
     const userId = (session.user as any).id;
 
     const body = await request.json();
@@ -43,8 +49,11 @@ export async function POST(
       );
     }
 
-    // Check if user can approve this expense claim (department-aware via travel request)
-    const canApprove = await canUserApprove(userId, expenseClaim.travelRequest.departmentId);
+    // Check if user can approve this expense claim
+    const canApprove = await canUserApprove(
+      userId,
+      expenseClaim.travelRequest.departmentId
+    );
     if (!canApprove) {
       return NextResponse.json(
         { error: "Forbidden - You cannot approve this expense claim" },
@@ -227,11 +236,7 @@ export async function POST(
             ? `<p><strong>Payment Voucher:</strong> ${voucherNumber}</p>`
             : ""
         }
-        ${
-          comment
-            ? `<p><strong>Approver Comment:</strong> ${comment}</p>`
-            : ""
-        }
+        ${comment ? `<p><strong>Approver Comment:</strong> ${comment}</p>` : ""}
       </div>
     `;
 
