@@ -315,13 +315,13 @@ export default function DashboardClient() {
       )}
 
       {/* Filter Controls */}
-      <div className="mb-6 flex items-center gap-4">
-        <div className="flex items-center gap-2">
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+        <div className="flex items-center gap-2 flex-shrink-0">
           <Filter className="h-5 w-5 text-gray-500" />
           <span className="text-sm font-medium text-gray-700">Filter by Status:</span>
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[220px]">
+          <SelectTrigger className="w-full sm:w-[220px]">
             <SelectValue placeholder="Select status" />
           </SelectTrigger>
           <SelectContent>
@@ -333,13 +333,13 @@ export default function DashboardClient() {
             <SelectItem value="closed">Closed</SelectItem>
           </SelectContent>
         </Select>
-        <span className="text-sm text-gray-500">
+        <span className="text-sm text-gray-500 hidden sm:inline">
           {viewType === "requests"
             ? `Showing ${filteredRequests.length} of ${requests.length} requests`
             : `Showing ${filteredExpenseClaims.length} of ${expenseClaims.length} expense claims`}
         </span>
-        <Link href="/summary" className="ml-auto">
-          <Button variant="outline" size="sm">
+        <Link href="/summary" className="w-full sm:w-auto sm:ml-auto">
+          <Button variant="outline" size="sm" className="w-full sm:w-auto">
             Back to Summary
           </Button>
         </Link>

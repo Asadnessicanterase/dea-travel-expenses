@@ -479,20 +479,22 @@ export default function ApprovalsClient() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <div className="flex items-center justify-between">
-          <TabsList>
-            <TabsTrigger value="requests" className="gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <TabsList className="w-full sm:w-auto">
+            <TabsTrigger value="requests" className="gap-2 flex-1 sm:flex-initial">
               <FileText className="h-4 w-4" />
-              Travel Requests
+              <span className="hidden xs:inline">Travel Requests</span>
+              <span className="xs:hidden">Requests</span>
             </TabsTrigger>
-            <TabsTrigger value="expenses" className="gap-2">
+            <TabsTrigger value="expenses" className="gap-2 flex-1 sm:flex-initial">
               <Euro className="h-4 w-4" />
-              Expense Claims
+              <span className="hidden xs:inline">Expense Claims</span>
+              <span className="xs:hidden">Expenses</span>
             </TabsTrigger>
           </TabsList>
 
-          <Link href="/summary">
-            <Button variant="outline" size="sm">
+          <Link href="/summary" className="w-full sm:w-auto">
+            <Button variant="outline" size="sm" className="w-full sm:w-auto">
               Back to Summary
             </Button>
           </Link>
@@ -501,13 +503,13 @@ export default function ApprovalsClient() {
         {/* TRAVEL REQUESTS TAB */}
         <TabsContent value="requests" className="space-y-6">
           {/* Filter Controls */}
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+            <div className="flex items-center gap-2 flex-shrink-0">
               <Filter className="h-5 w-5 text-gray-500" />
               <span className="text-sm font-medium text-gray-700">Filter by Status:</span>
             </div>
             <Select value={requestStatusFilter} onValueChange={setRequestStatusFilter}>
-              <SelectTrigger className="w-[220px]">
+              <SelectTrigger className="w-full sm:w-[220px]">
                 <SelectValue placeholder="Select status" />
               </SelectTrigger>
               <SelectContent>
@@ -519,7 +521,7 @@ export default function ApprovalsClient() {
                 <SelectItem value="closed">Closed</SelectItem>
               </SelectContent>
             </Select>
-            <span className="text-sm text-gray-500">
+            <span className="text-sm text-gray-500 hidden sm:inline">
               Showing {filteredRequests.length} of {requests.length} requests
             </span>
           </div>
@@ -837,13 +839,13 @@ export default function ApprovalsClient() {
         {/* EXPENSE CLAIMS TAB */}
         <TabsContent value="expenses" className="space-y-6">
           {/* Filter Controls */}
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+            <div className="flex items-center gap-2 flex-shrink-0">
               <Filter className="h-5 w-5 text-gray-500" />
               <span className="text-sm font-medium text-gray-700">Filter by Status:</span>
             </div>
             <Select value={claimStatusFilter} onValueChange={setClaimStatusFilter}>
-              <SelectTrigger className="w-[220px]">
+              <SelectTrigger className="w-full sm:w-[220px]">
                 <SelectValue placeholder="Select status" />
               </SelectTrigger>
               <SelectContent>
@@ -854,7 +856,7 @@ export default function ApprovalsClient() {
                 <SelectItem value="closed">Closed</SelectItem>
               </SelectContent>
             </Select>
-            <span className="text-sm text-gray-500">
+            <span className="text-sm text-gray-500 hidden sm:inline">
               Showing {filteredClaims.length} of {expenseClaims.length} claims
             </span>
           </div>
