@@ -1,16 +1,17 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Plus, Download, FileText, MapPin } from "lucide-react";
+import { ArrowLeft, Plus, Download, FileText, MapPin, Camera, FolderOpen } from "lucide-react";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import { formatDate } from "@/lib/date-utils";
+import { ReceiptScannerOverlay } from "@/components/ui/receipt-scanner-overlay";
 
 interface ExpenseClaim {
   id: string;
@@ -51,12 +52,30 @@ export default function ExpensesPage() {
   const [accommodationFile, setAccommodationFile] = useState<File | null>(null);
   const [transportationFile, setTransportationFile] = useState<File | null>(null);
   const [otherFile, setOtherFile] = useState<File | null>(null);
+  const [scannerOverlay, setScannerOverlay] = useState<'accommodation' | 'transportation' | 'other' | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+  const accommodationInputRef = useRef<HTMLInputElement>(null);
+  const transportationInputRef = useRef<HTMLInputElement>(null);
+  const otherInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (id) {
       fetchRequest();
     }
   }, [id]);
+
+  // Detect mobile device
+  useEffect(() => {
+    const checkMobile = () => {
+      const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+      const isSmallScreen = window.innerWidth <= 768;
+      setIsMobile(isTouchDevice && isSmallScreen);
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const fetchRequest = async () => {
     try {
@@ -89,25 +108,48 @@ export default function ExpensesPage() {
     });
   };
 
+  const handleTakePhoto = (type: 'accommodation' | 'transportation' | 'other') => {
+    if (!isMobile) {
+      // On desktop, just trigger file input directly
+      const inputRef = type === 'accommodation' ? accommodationInputRef :
+                       type === 'transportation' ? transportationInputRef : otherInputRef;
+      inputRef.current?.click();
+      return;
+    }
+
+    // On mobile, show overlay first
+    setScannerOverlay(type);
+
+    // Wait 1 second, then trigger the file input
+    setTimeout(() => {
+      const inputRef = type === 'accommodation' ? accommodationInputRef :
+                       type === 'transportation' ? transportationInputRef : otherInputRef;
+      inputRef.current?.click();
+    }, 1000);
+  };
+
   const handleFileChange = (type: 'accommodation' | 'transportation' | 'other') => (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Hide overlay when file is selected or cancelled
+    setScannerOverlay(null);
+
     if (e.target.files && e.target.files[0]) {
       const selectedFile = e.target.files[0];
-      
+
       // Validate file type (PDF or common image formats)
       const allowedTypes = [
         'application/pdf',
         'image/jpeg',
-        'image/jpg', 
+        'image/jpg',
         'image/png',
         'image/webp'
       ];
-      
+
       if (!allowedTypes.includes(selectedFile.type)) {
         toast.error("Please select a PDF or image file (JPG, PNG, WebP)");
         e.target.value = '';
         return;
       }
-      
+
       // Validate file size (10MB limit)
       const maxSize = 10 * 1024 * 1024; // 10MB in bytes
       if (selectedFile.size > maxSize) {
@@ -115,7 +157,7 @@ export default function ExpensesPage() {
         e.target.value = '';
         return;
       }
-      
+
       if (type === 'accommodation') {
         setAccommodationFile(selectedFile);
       } else if (type === 'transportation') {
@@ -352,15 +394,39 @@ export default function ExpensesPage() {
                 />
                 {formData.accommodation && parseFloat(formData.accommodation) > 0 && (
                   <div className="mt-2">
-                    <Label htmlFor="accommodationReceipt" className="text-sm text-gray-600">
+                    <Label className="text-sm text-gray-600">
                       Accommodation Receipt (PDF or Image)
                     </Label>
+                    <div className="flex gap-2 mt-1">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleTakePhoto('accommodation')}
+                        className="flex-1 gap-2"
+                      >
+                        <Camera className="h-4 w-4" />
+                        Take Photo
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => accommodationInputRef.current?.click()}
+                        className="flex-1 gap-2"
+                      >
+                        <FolderOpen className="h-4 w-4" />
+                        Choose File
+                      </Button>
+                    </div>
                     <Input
                       id="accommodationReceipt"
                       type="file"
                       accept="application/pdf,image/jpeg,image/jpg,image/png,image/webp"
+                      capture="camera"
+                      ref={accommodationInputRef}
                       onChange={handleFileChange('accommodation')}
-                      className="mt-1"
+                      className="hidden"
                     />
                     <p className="text-xs text-gray-500 mt-1">Max 10MB - PDF, JPG, PNG, or WebP</p>
                     {accommodationFile && (
@@ -389,15 +455,39 @@ export default function ExpensesPage() {
                 />
                 {formData.transportation && parseFloat(formData.transportation) > 0 && (
                   <div className="mt-2">
-                    <Label htmlFor="transportationReceipt" className="text-sm text-gray-600">
+                    <Label className="text-sm text-gray-600">
                       Transportation Receipt (PDF or Image)
                     </Label>
+                    <div className="flex gap-2 mt-1">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleTakePhoto('transportation')}
+                        className="flex-1 gap-2"
+                      >
+                        <Camera className="h-4 w-4" />
+                        Take Photo
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => transportationInputRef.current?.click()}
+                        className="flex-1 gap-2"
+                      >
+                        <FolderOpen className="h-4 w-4" />
+                        Choose File
+                      </Button>
+                    </div>
                     <Input
                       id="transportationReceipt"
                       type="file"
                       accept="application/pdf,image/jpeg,image/jpg,image/png,image/webp"
+                      capture="camera"
+                      ref={transportationInputRef}
                       onChange={handleFileChange('transportation')}
-                      className="mt-1"
+                      className="hidden"
                     />
                     <p className="text-xs text-gray-500 mt-1">Max 10MB - PDF, JPG, PNG, or WebP</p>
                     {transportationFile && (
@@ -437,15 +527,39 @@ export default function ExpensesPage() {
                     placeholder="e.g., Conference materials, meals"
                   />
                   <div className="mt-2">
-                    <Label htmlFor="otherReceipt" className="text-sm text-gray-600">
+                    <Label className="text-sm text-gray-600">
                       Other Expenses Receipt (PDF or Image)
                     </Label>
+                    <div className="flex gap-2 mt-1">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleTakePhoto('other')}
+                        className="flex-1 gap-2"
+                      >
+                        <Camera className="h-4 w-4" />
+                        Take Photo
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => otherInputRef.current?.click()}
+                        className="flex-1 gap-2"
+                      >
+                        <FolderOpen className="h-4 w-4" />
+                        Choose File
+                      </Button>
+                    </div>
                     <Input
                       id="otherReceipt"
                       type="file"
                       accept="application/pdf,image/jpeg,image/jpg,image/png,image/webp"
+                      capture="camera"
+                      ref={otherInputRef}
                       onChange={handleFileChange('other')}
-                      className="mt-1"
+                      className="hidden"
                     />
                     <p className="text-xs text-gray-500 mt-1">Max 10MB - PDF, JPG, PNG, or WebP</p>
                     {otherFile && (
@@ -570,6 +684,20 @@ export default function ExpensesPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Scanner Overlays */}
+      <ReceiptScannerOverlay
+        isOpen={scannerOverlay === 'accommodation'}
+        onClose={() => setScannerOverlay(null)}
+      />
+      <ReceiptScannerOverlay
+        isOpen={scannerOverlay === 'transportation'}
+        onClose={() => setScannerOverlay(null)}
+      />
+      <ReceiptScannerOverlay
+        isOpen={scannerOverlay === 'other'}
+        onClose={() => setScannerOverlay(null)}
+      />
     </div>
   );
 }

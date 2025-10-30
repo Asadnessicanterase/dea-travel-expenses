@@ -1,15 +1,16 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { AlertCircle, ArrowLeft, Upload, X } from "lucide-react";
+import { AlertCircle, ArrowLeft, Upload, X, Camera, FolderOpen } from "lucide-react";
 import toast from "react-hot-toast";
+import { ReceiptScannerOverlay } from "@/components/ui/receipt-scanner-overlay";
 
 interface ExpenseClaim {
   id: string;
@@ -51,6 +52,25 @@ export default function EditExpenseClaimClient({ expenseClaim }: { expenseClaim:
   const [keepExistingTransportationReceipt, setKeepExistingTransportationReceipt] = useState(true);
   const [keepExistingOtherReceipt, setKeepExistingOtherReceipt] = useState(true);
 
+  const [scannerOverlay, setScannerOverlay] = useState<'accommodation' | 'transportation' | 'other' | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+  const accommodationInputRef = useRef<HTMLInputElement>(null);
+  const transportationInputRef = useRef<HTMLInputElement>(null);
+  const otherInputRef = useRef<HTMLInputElement>(null);
+
+  // Detect mobile device
+  useEffect(() => {
+    const checkMobile = () => {
+      const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+      const isSmallScreen = window.innerWidth <= 768;
+      setIsMobile(isTouchDevice && isSmallScreen);
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   const calculateTotal = () => {
     const acc = parseFloat(accommodation) || 0;
     const trans = parseFloat(transportation) || 0;
@@ -58,28 +78,51 @@ export default function EditExpenseClaimClient({ expenseClaim }: { expenseClaim:
     return acc + trans + other;
   };
 
+  const handleTakePhoto = (type: 'accommodation' | 'transportation' | 'other') => {
+    if (!isMobile) {
+      // On desktop, just trigger file input directly
+      const inputRef = type === 'accommodation' ? accommodationInputRef :
+                       type === 'transportation' ? transportationInputRef : otherInputRef;
+      inputRef.current?.click();
+      return;
+    }
+
+    // On mobile, show overlay first
+    setScannerOverlay(type);
+
+    // Wait 1 second, then trigger the file input
+    setTimeout(() => {
+      const inputRef = type === 'accommodation' ? accommodationInputRef :
+                       type === 'transportation' ? transportationInputRef : otherInputRef;
+      inputRef.current?.click();
+    }, 1000);
+  };
+
   const handleFileChange = (
     type: 'accommodation' | 'transportation' | 'other',
     setter: (file: File | null) => void
   ) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Hide overlay when file is selected or cancelled
+    setScannerOverlay(null);
+
     if (e.target.files && e.target.files[0]) {
       const selectedFile = e.target.files[0];
-      
+
       // Validate file type (PDF or common image formats)
       const allowedTypes = [
         'application/pdf',
         'image/jpeg',
-        'image/jpg', 
+        'image/jpg',
         'image/png',
         'image/webp'
       ];
-      
+
       if (!allowedTypes.includes(selectedFile.type)) {
         toast.error("Please select a PDF or image file (JPG, PNG, WebP)");
         e.target.value = '';
         return;
       }
-      
+
       // Validate file size (10MB limit)
       const maxSize = 10 * 1024 * 1024; // 10MB in bytes
       if (selectedFile.size > maxSize) {
@@ -87,7 +130,7 @@ export default function EditExpenseClaimClient({ expenseClaim }: { expenseClaim:
         e.target.value = '';
         return;
       }
-      
+
       setter(selectedFile);
     }
   };
@@ -277,17 +320,30 @@ export default function EditExpenseClaimClient({ expenseClaim }: { expenseClaim:
 
                 {(!expenseClaim.accommodationReceipt || !keepExistingAccommodationReceipt) && (
                   <div className="mt-2">
-                    <Label htmlFor="accommodationReceipt" className="text-sm">
+                    <Label className="text-sm">
                       {accommodationFile ? "Receipt uploaded" : "Upload Receipt (PDF or Image)"}
                     </Label>
                     <div className="mt-1 flex items-center gap-2">
-                      <Input
-                        id="accommodationReceipt"
-                        type="file"
-                        accept="application/pdf,image/jpeg,image/jpg,image/png,image/webp"
-                        onChange={handleFileChange('accommodation', setAccommodationFile)}
-                        className="flex-1"
-                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleTakePhoto('accommodation')}
+                        className="flex-1 gap-2"
+                      >
+                        <Camera className="h-4 w-4" />
+                        Take Photo
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => accommodationInputRef.current?.click()}
+                        className="flex-1 gap-2"
+                      >
+                        <FolderOpen className="h-4 w-4" />
+                        Choose File
+                      </Button>
                       {accommodationFile && (
                         <Button
                           type="button"
@@ -299,6 +355,15 @@ export default function EditExpenseClaimClient({ expenseClaim }: { expenseClaim:
                         </Button>
                       )}
                     </div>
+                    <Input
+                      id="accommodationReceipt"
+                      type="file"
+                      accept="application/pdf,image/jpeg,image/jpg,image/png,image/webp"
+                      capture="camera"
+                      ref={accommodationInputRef}
+                      onChange={handleFileChange('accommodation', setAccommodationFile)}
+                      className="hidden"
+                    />
                     <p className="text-xs text-gray-500 mt-1">Max 10MB - PDF, JPG, PNG, or WebP</p>
                   </div>
                 )}
@@ -334,17 +399,30 @@ export default function EditExpenseClaimClient({ expenseClaim }: { expenseClaim:
 
                 {(!expenseClaim.transportationReceipt || !keepExistingTransportationReceipt) && (
                   <div className="mt-2">
-                    <Label htmlFor="transportationReceipt" className="text-sm">
+                    <Label className="text-sm">
                       {transportationFile ? "Receipt uploaded" : "Upload Receipt (PDF or Image)"}
                     </Label>
                     <div className="mt-1 flex items-center gap-2">
-                      <Input
-                        id="transportationReceipt"
-                        type="file"
-                        accept="application/pdf,image/jpeg,image/jpg,image/png,image/webp"
-                        onChange={handleFileChange('transportation', setTransportationFile)}
-                        className="flex-1"
-                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleTakePhoto('transportation')}
+                        className="flex-1 gap-2"
+                      >
+                        <Camera className="h-4 w-4" />
+                        Take Photo
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => transportationInputRef.current?.click()}
+                        className="flex-1 gap-2"
+                      >
+                        <FolderOpen className="h-4 w-4" />
+                        Choose File
+                      </Button>
                       {transportationFile && (
                         <Button
                           type="button"
@@ -356,6 +434,15 @@ export default function EditExpenseClaimClient({ expenseClaim }: { expenseClaim:
                         </Button>
                       )}
                     </div>
+                    <Input
+                      id="transportationReceipt"
+                      type="file"
+                      accept="application/pdf,image/jpeg,image/jpg,image/png,image/webp"
+                      capture="camera"
+                      ref={transportationInputRef}
+                      onChange={handleFileChange('transportation', setTransportationFile)}
+                      className="hidden"
+                    />
                     <p className="text-xs text-gray-500 mt-1">Max 10MB - PDF, JPG, PNG, or WebP</p>
                   </div>
                 )}
@@ -404,17 +491,30 @@ export default function EditExpenseClaimClient({ expenseClaim }: { expenseClaim:
 
             {(!expenseClaim.otherReceipt || !keepExistingOtherReceipt) && parseFloat(otherAmount) > 0 && (
               <div className="space-y-2">
-                <Label htmlFor="otherReceipt" className="text-sm">
+                <Label className="text-sm">
                   {otherFile ? "Receipt uploaded" : "Upload Other Expenses Receipt (PDF or Image)"}
                 </Label>
                 <div className="flex items-center gap-2">
-                  <Input
-                    id="otherReceipt"
-                    type="file"
-                    accept="application/pdf,image/jpeg,image/jpg,image/png,image/webp"
-                    onChange={handleFileChange('other', setOtherFile)}
-                    className="flex-1"
-                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleTakePhoto('other')}
+                    className="flex-1 gap-2"
+                  >
+                    <Camera className="h-4 w-4" />
+                    Take Photo
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => otherInputRef.current?.click()}
+                    className="flex-1 gap-2"
+                  >
+                    <FolderOpen className="h-4 w-4" />
+                    Choose File
+                  </Button>
                   {otherFile && (
                     <Button
                       type="button"
@@ -426,6 +526,15 @@ export default function EditExpenseClaimClient({ expenseClaim }: { expenseClaim:
                     </Button>
                   )}
                 </div>
+                <Input
+                  id="otherReceipt"
+                  type="file"
+                  accept="application/pdf,image/jpeg,image/jpg,image/png,image/webp"
+                  capture="camera"
+                  ref={otherInputRef}
+                  onChange={handleFileChange('other', setOtherFile)}
+                  className="hidden"
+                />
                 <p className="text-xs text-gray-500">Max 10MB - PDF, JPG, PNG, or WebP</p>
               </div>
             )}
@@ -460,6 +569,20 @@ export default function EditExpenseClaimClient({ expenseClaim }: { expenseClaim:
           </form>
         </CardContent>
       </Card>
+
+      {/* Scanner Overlays */}
+      <ReceiptScannerOverlay
+        isOpen={scannerOverlay === 'accommodation'}
+        onClose={() => setScannerOverlay(null)}
+      />
+      <ReceiptScannerOverlay
+        isOpen={scannerOverlay === 'transportation'}
+        onClose={() => setScannerOverlay(null)}
+      />
+      <ReceiptScannerOverlay
+        isOpen={scannerOverlay === 'other'}
+        onClose={() => setScannerOverlay(null)}
+      />
     </div>
   );
 }
