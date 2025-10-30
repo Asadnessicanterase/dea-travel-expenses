@@ -291,7 +291,7 @@ export default function SummaryClient() {
           )}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
           {travelRequestStatusCards.map((card) => {
             const StatusIcon = card.icon;
             const count =
@@ -307,16 +307,16 @@ export default function SummaryClient() {
                 <Card
                   className={`hover:shadow-lg transition-all cursor-pointer border-2 ${card.borderColor} ${card.bgColor}`}
                 >
-                  <CardHeader className="pb-3">
+                  <CardHeader className="px-4 pt-3 pb-1 space-y-1 sm:px-6 sm:pt-5 sm:pb-3 sm:space-y-1.5">
                     <div className="flex items-center justify-between">
-                      <StatusIcon className={`h-5 w-5 ${card.color}`} />
+                      <StatusIcon className={`h-4 w-4 sm:h-5 sm:w-5 ${card.color}`} />
                     </div>
                   </CardHeader>
-                  <CardContent>
-                    <div className="text-3xl font-bold text-gray-900 mb-1">
+                  <CardContent className="px-4 pb-3 pt-0 sm:px-6 sm:pb-5">
+                    <div className="text-2xl sm:text-3xl font-bold text-gray-900 leading-tight mb-0.5 sm:mb-1">
                       {count}
                     </div>
-                    <CardTitle className="text-sm font-medium text-gray-700">
+                    <CardTitle className="text-xs sm:text-sm font-medium text-gray-700 leading-tight">
                       {card.label}
                     </CardTitle>
                   </CardContent>
@@ -356,7 +356,7 @@ export default function SummaryClient() {
           )}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
           {expenseClaimStatusCards.map((card) => {
             const StatusIcon = card.icon;
             const count =
@@ -372,16 +372,16 @@ export default function SummaryClient() {
                 <Card
                   className={`hover:shadow-lg transition-all cursor-pointer border-2 ${card.borderColor} ${card.bgColor}`}
                 >
-                  <CardHeader className="pb-3">
+                  <CardHeader className="px-4 pt-3 pb-1 space-y-1 sm:px-6 sm:pt-5 sm:pb-3 sm:space-y-1.5">
                     <div className="flex items-center justify-between">
-                      <StatusIcon className={`h-5 w-5 ${card.color}`} />
+                      <StatusIcon className={`h-4 w-4 sm:h-5 sm:w-5 ${card.color}`} />
                     </div>
                   </CardHeader>
-                  <CardContent>
-                    <div className="text-3xl font-bold text-gray-900 mb-1">
+                  <CardContent className="px-4 pb-3 pt-0 sm:px-6 sm:pb-5">
+                    <div className="text-2xl sm:text-3xl font-bold text-gray-900 leading-tight mb-0.5 sm:mb-1">
                       {count}
                     </div>
-                    <CardTitle className="text-sm font-medium text-gray-700">
+                    <CardTitle className="text-xs sm:text-sm font-medium text-gray-700 leading-tight">
                       {card.label}
                     </CardTitle>
                   </CardContent>
