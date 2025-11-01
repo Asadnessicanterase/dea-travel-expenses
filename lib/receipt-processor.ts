@@ -1,5 +1,5 @@
 import { supabase } from "./supabase-client";
-import { PDFDocument } from "pdf-lib";
+import { PDFDocument, degrees } from "pdf-lib";
 
 /**
  * Download a file from Supabase Storage as a Buffer
@@ -34,7 +34,8 @@ export async function downloadFileAsBuffer(key: string): Promise<{ buffer: Buffe
 }
 
 /**
- * Convert an image buffer to a PDF page
+ * Convert an image buffer to a properly sized A4 PDF page
+ * with 10 mm margins, automatic rotation, and preserved aspect ratio.
  */
 export async function convertImageToPdf(imageBuffer: Buffer, contentType: string): Promise<Buffer> {
   try {
@@ -42,17 +43,53 @@ export async function convertImageToPdf(imageBuffer: Buffer, contentType: string
 
     let image;
     if (contentType === "image/jpeg" || contentType === "image/jpg") {
-      image = await pdfDoc.embedJpg(imageBuffer);
+      image = await pdfDoc.embedJpg(Uint8Array.from(imageBuffer));
     } else if (contentType === "image/png") {
-      image = await pdfDoc.embedPng(imageBuffer);
+      image = await pdfDoc.embedPng(Uint8Array.from(imageBuffer));
     } else {
       throw new Error(`Unsupported image type: ${contentType}`);
     }
 
-    // Match page to image size
+    // A4 page size in points (1 pt = 1/72 inch)
+    const A4_WIDTH = 595.28;  // 210 mm
+    const A4_HEIGHT = 841.89; // 297 mm
+    const MARGIN = 28.35;     // ≈ 10 mm
+
+    const usableWidth = A4_WIDTH - MARGIN * 2;
+    const usableHeight = A4_HEIGHT - MARGIN * 2;
+
+    // Original image size
     const { width, height } = image.scale(1);
-    const page = pdfDoc.addPage([width, height]);
-    page.drawImage(image, { x: 0, y: 0, width, height });
+
+    // Auto-rotate landscape images
+    let rotated = false;
+    let displayWidth = width;
+    let displayHeight = height;
+    if (width > height) {
+      rotated = true;
+      [displayWidth, displayHeight] = [height, width];
+    }
+
+    // Scale to fit usable area
+    const widthScale = usableWidth / displayWidth;
+    const heightScale = usableHeight / displayHeight;
+    const scale = Math.min(widthScale, heightScale);
+
+    const finalWidth = displayWidth * scale;
+    const finalHeight = displayHeight * scale;
+
+    const page = pdfDoc.addPage([A4_WIDTH, A4_HEIGHT]);
+    const x = (A4_WIDTH - finalWidth) / 2;
+    const y = (A4_HEIGHT - finalHeight) / 2;
+
+    // Apply rotation using pdf-lib helper
+    page.drawImage(image, {
+      x,
+      y,
+      width: finalWidth,
+      height: finalHeight,
+      rotate: rotated ? degrees(90) : undefined,
+    });
 
     const pdfBytes = await pdfDoc.save();
     return Buffer.from(pdfBytes);
@@ -63,16 +100,16 @@ export async function convertImageToPdf(imageBuffer: Buffer, contentType: string
 }
 
 /**
- * Process a receipt: download from Supabase and convert to PDF if needed
+ * Process a single receipt: download from Supabase and convert to PDF if needed
  */
 export async function processReceipt(receiptKey: string): Promise<Buffer> {
   try {
     const { buffer, contentType } = await downloadFileAsBuffer(receiptKey);
 
-    // If already a PDF, return directly
+    // Already a PDF → return as is
     if (contentType === "application/pdf") return buffer;
 
-    // If image, convert it
+    // Image → convert
     if (contentType.startsWith("image/")) return await convertImageToPdf(buffer, contentType);
 
     throw new Error(`Unsupported file type: ${contentType}`);
@@ -101,7 +138,7 @@ export async function processMultipleReceipts(
       results.push({ type: receipt.type, buffer });
     } catch (error) {
       console.error(`⚠️ Failed to process ${receipt.type} receipt:`, error);
-      // Continue with other receipts even if one fails
+      // Continue even if one fails
     }
   }
 
