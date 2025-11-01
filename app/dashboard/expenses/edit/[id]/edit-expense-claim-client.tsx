@@ -13,6 +13,7 @@ import toast from "react-hot-toast";
 import { ReceiptScannerOverlay } from "@/components/ui/receipt-scanner-overlay";
 import { ImageCropModal } from "@/components/ui/image-crop-modal";
 import { isImageFile, createPreviewUrl, revokePreviewUrl } from "@/lib/image-utils";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 interface ExpenseClaim {
   id: string;
@@ -95,6 +96,11 @@ export default function EditExpenseClaimClient({ expenseClaim }: { expenseClaim:
       });
     };
   }, [previewUrls]);
+
+  // Debug: Log submitting state changes
+  useEffect(() => {
+    console.log('Submitting state changed:', submitting);
+  }, [submitting]);
 
   const calculateTotal = () => {
     const acc = parseFloat(accommodation) || 0;
@@ -261,7 +267,9 @@ export default function EditExpenseClaimClient({ expenseClaim }: { expenseClaim:
       return;
     }
 
+    console.log('Setting submitting to true');
     setSubmitting(true);
+    console.log('Submitting state set');
 
     try {
       const formData = new FormData();
@@ -367,6 +375,7 @@ export default function EditExpenseClaimClient({ expenseClaim }: { expenseClaim:
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder={`Default: ${expenseClaim.travelRequest.eventName} Expenses`}
+                disabled={submitting}
               />
             </div>
 
@@ -379,6 +388,7 @@ export default function EditExpenseClaimClient({ expenseClaim }: { expenseClaim:
                 onChange={(e) => setDate(e.target.value)}
                 max={new Date().toISOString().split('T')[0]}
                 required
+                disabled={submitting}
               />
             </div>
 
@@ -394,6 +404,7 @@ export default function EditExpenseClaimClient({ expenseClaim }: { expenseClaim:
                   value={accommodation}
                   onChange={(e) => setAccommodation(e.target.value)}
                   placeholder="0.00"
+                  disabled={submitting}
                 />
                 
                 {expenseClaim.accommodationReceipt && (
@@ -423,6 +434,7 @@ export default function EditExpenseClaimClient({ expenseClaim }: { expenseClaim:
                         size="sm"
                         onClick={() => handleTakePhoto('accommodation')}
                         className="flex-1 gap-2"
+                        disabled={submitting}
                       >
                         <Camera className="h-4 w-4" />
                         Take Photo
@@ -433,6 +445,7 @@ export default function EditExpenseClaimClient({ expenseClaim }: { expenseClaim:
                         size="sm"
                         onClick={() => accommodationInputRef.current?.click()}
                         className="flex-1 gap-2"
+                        disabled={submitting}
                       >
                         <FolderOpen className="h-4 w-4" />
                         Choose File
@@ -488,6 +501,7 @@ export default function EditExpenseClaimClient({ expenseClaim }: { expenseClaim:
                   value={transportation}
                   onChange={(e) => setTransportation(e.target.value)}
                   placeholder="0.00"
+                  disabled={submitting}
                 />
                 
                 {expenseClaim.transportationReceipt && (
@@ -517,6 +531,7 @@ export default function EditExpenseClaimClient({ expenseClaim }: { expenseClaim:
                         size="sm"
                         onClick={() => handleTakePhoto('transportation')}
                         className="flex-1 gap-2"
+                        disabled={submitting}
                       >
                         <Camera className="h-4 w-4" />
                         Take Photo
@@ -527,6 +542,7 @@ export default function EditExpenseClaimClient({ expenseClaim }: { expenseClaim:
                         size="sm"
                         onClick={() => transportationInputRef.current?.click()}
                         className="flex-1 gap-2"
+                        disabled={submitting}
                       >
                         <FolderOpen className="h-4 w-4" />
                         Choose File
@@ -583,6 +599,7 @@ export default function EditExpenseClaimClient({ expenseClaim }: { expenseClaim:
                 value={otherAmount}
                 onChange={(e) => setOtherAmount(e.target.value)}
                 placeholder="0.00"
+                disabled={submitting}
               />
             </div>
 
@@ -594,6 +611,7 @@ export default function EditExpenseClaimClient({ expenseClaim }: { expenseClaim:
                 value={otherDescription}
                 onChange={(e) => setOtherDescription(e.target.value)}
                 placeholder="E.g., Meals, Parking, etc."
+                disabled={submitting}
               />
             </div>
 
@@ -624,6 +642,7 @@ export default function EditExpenseClaimClient({ expenseClaim }: { expenseClaim:
                     size="sm"
                     onClick={() => handleTakePhoto('other')}
                     className="flex-1 gap-2"
+                    disabled={submitting}
                   >
                     <Camera className="h-4 w-4" />
                     Take Photo
@@ -634,6 +653,7 @@ export default function EditExpenseClaimClient({ expenseClaim }: { expenseClaim:
                     size="sm"
                     onClick={() => otherInputRef.current?.click()}
                     className="flex-1 gap-2"
+                    disabled={submitting}
                   >
                     <FolderOpen className="h-4 w-4" />
                     Choose File
@@ -729,6 +749,24 @@ export default function EditExpenseClaimClient({ expenseClaim }: { expenseClaim:
         onSave={handleCropSave}
         onCancel={handleCropCancel}
       />
+
+      {/* Form Submission Loading Dialog */}
+      <Dialog open={submitting} onOpenChange={() => {}}>
+        <DialogContent className="sm:max-w-[320px] [&>button]:hidden">
+          <div className="flex flex-col items-center gap-4 py-6">
+            <div
+              className="h-12 w-12 rounded-full border-4 border-blue-200 border-t-blue-600 animate-spin"
+              aria-hidden="true"
+            />
+            <DialogTitle className="text-center text-lg font-semibold">
+              📝 Submitting expense claim...
+            </DialogTitle>
+            <DialogDescription className="text-center text-sm text-gray-500">
+              Please wait while we process your submission.
+            </DialogDescription>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

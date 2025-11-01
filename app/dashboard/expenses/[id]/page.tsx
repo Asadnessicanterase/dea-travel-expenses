@@ -14,6 +14,7 @@ import { formatDate } from "@/lib/date-utils";
 import { ReceiptScannerOverlay } from "@/components/ui/receipt-scanner-overlay";
 import { ImageCropModal } from "@/components/ui/image-crop-modal";
 import { isImageFile, createPreviewUrl, revokePreviewUrl } from "@/lib/image-utils";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 interface ExpenseClaim {
   id: string;
@@ -470,6 +471,7 @@ export default function ExpensesPage() {
                   value={formData.description}
                   onChange={handleChange}
                   placeholder="Auto-filled with event name"
+                  disabled={submitting}
                 />
               </div>
 
@@ -484,6 +486,7 @@ export default function ExpensesPage() {
                   value={formData.accommodation}
                   onChange={handleChange}
                   placeholder="0.00"
+                  disabled={submitting}
                 />
                 {formData.accommodation && parseFloat(formData.accommodation) > 0 && (
                   <div className="mt-2">
@@ -497,6 +500,7 @@ export default function ExpensesPage() {
                         size="sm"
                         onClick={() => handleTakePhoto('accommodation')}
                         className="flex-1 gap-2"
+                        disabled={submitting}
                       >
                         <Camera className="h-4 w-4" />
                         Take Photo
@@ -507,6 +511,7 @@ export default function ExpensesPage() {
                         size="sm"
                         onClick={() => accommodationInputRef.current?.click()}
                         className="flex-1 gap-2"
+                        disabled={submitting}
                       >
                         <FolderOpen className="h-4 w-4" />
                         Choose File
@@ -567,6 +572,7 @@ export default function ExpensesPage() {
                   value={formData.transportation}
                   onChange={handleChange}
                   placeholder="0.00"
+                  disabled={submitting}
                 />
                 {formData.transportation && parseFloat(formData.transportation) > 0 && (
                   <div className="mt-2">
@@ -580,6 +586,7 @@ export default function ExpensesPage() {
                         size="sm"
                         onClick={() => handleTakePhoto('transportation')}
                         className="flex-1 gap-2"
+                        disabled={submitting}
                       >
                         <Camera className="h-4 w-4" />
                         Take Photo
@@ -590,6 +597,7 @@ export default function ExpensesPage() {
                         size="sm"
                         onClick={() => transportationInputRef.current?.click()}
                         className="flex-1 gap-2"
+                        disabled={submitting}
                       >
                         <FolderOpen className="h-4 w-4" />
                         Choose File
@@ -650,6 +658,7 @@ export default function ExpensesPage() {
                   value={formData.otherAmount}
                   onChange={handleChange}
                   placeholder="0.00"
+                  disabled={submitting}
                 />
               </div>
 
@@ -662,6 +671,7 @@ export default function ExpensesPage() {
                     value={formData.otherDescription}
                     onChange={handleChange}
                     placeholder="e.g., Conference materials, meals"
+                    disabled={submitting}
                   />
                   <div className="mt-2">
                     <Label className="text-sm text-gray-600">
@@ -674,6 +684,7 @@ export default function ExpensesPage() {
                         size="sm"
                         onClick={() => handleTakePhoto('other')}
                         className="flex-1 gap-2"
+                        disabled={submitting}
                       >
                         <Camera className="h-4 w-4" />
                         Take Photo
@@ -684,6 +695,7 @@ export default function ExpensesPage() {
                         size="sm"
                         onClick={() => otherInputRef.current?.click()}
                         className="flex-1 gap-2"
+                        disabled={submitting}
                       >
                         <FolderOpen className="h-4 w-4" />
                         Choose File
@@ -865,6 +877,24 @@ export default function ExpensesPage() {
         onSave={handleCropSave}
         onCancel={handleCropCancel}
       />
+
+      {/* Form Submission Loading Dialog */}
+      <Dialog open={submitting} onOpenChange={() => {}}>
+        <DialogContent className="sm:max-w-[320px] [&>button]:hidden">
+          <div className="flex flex-col items-center gap-4 py-6">
+            <div
+              className="h-12 w-12 rounded-full border-4 border-blue-200 border-t-blue-600 animate-spin"
+              aria-hidden="true"
+            />
+            <DialogTitle className="text-center text-lg font-semibold">
+              📝 Submitting expense claim...
+            </DialogTitle>
+            <DialogDescription className="text-center text-sm text-gray-500">
+              Please wait while we process your submission.
+            </DialogDescription>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
