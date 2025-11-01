@@ -7,11 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Plus, Download, FileText, MapPin, Camera, FolderOpen } from "lucide-react";
+import { ArrowLeft, Plus, Download, FileText, MapPin, Camera, FolderOpen, X } from "lucide-react";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import { formatDate } from "@/lib/date-utils";
 import { ReceiptScannerOverlay } from "@/components/ui/receipt-scanner-overlay";
+import { ImageCropModal } from "@/components/ui/image-crop-modal";
+import { isImageFile, createPreviewUrl, revokePreviewUrl } from "@/lib/image-utils";
 
 interface ExpenseClaim {
   id: string;
@@ -58,6 +60,20 @@ export default function ExpensesPage() {
   const transportationInputRef = useRef<HTMLInputElement>(null);
   const otherInputRef = useRef<HTMLInputElement>(null);
 
+  // Crop modal state
+  const [cropModalState, setCropModalState] = useState<{
+    isOpen: boolean;
+    type: 'accommodation' | 'transportation' | 'other' | null;
+    file: File | null;
+  }>({ isOpen: false, type: null, file: null });
+
+  // Preview URLs
+  const [previewUrls, setPreviewUrls] = useState<{
+    accommodation?: string;
+    transportation?: string;
+    other?: string;
+  }>({});
+
   useEffect(() => {
     if (id) {
       fetchRequest();
@@ -76,6 +92,15 @@ export default function ExpensesPage() {
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  // Cleanup preview URLs on unmount
+  useEffect(() => {
+    return () => {
+      Object.values(previewUrls).forEach(url => {
+        if (url) revokePreviewUrl(url);
+      });
+    };
+  }, [previewUrls]);
 
   const fetchRequest = async () => {
     try {
@@ -158,18 +183,86 @@ export default function ExpensesPage() {
         return;
       }
 
-      if (type === 'accommodation') {
-        setAccommodationFile(selectedFile);
-      } else if (type === 'transportation') {
-        setTransportationFile(selectedFile);
-      } else if (type === 'other') {
-        setOtherFile(selectedFile);
+      // Check if it's an image (open crop modal) or PDF (save directly)
+      if (isImageFile(selectedFile)) {
+        // Open crop modal for images
+        setCropModalState({
+          isOpen: true,
+          type,
+          file: selectedFile,
+        });
+      } else {
+        // For PDFs, save directly without cropping
+        if (type === 'accommodation') {
+          setAccommodationFile(selectedFile);
+        } else if (type === 'transportation') {
+          setTransportationFile(selectedFile);
+        } else if (type === 'other') {
+          setOtherFile(selectedFile);
+        }
+      }
+    }
+
+    // Reset file input
+    e.target.value = '';
+  };
+
+  const handleCropSave = (croppedFile: File) => {
+    const type = cropModalState.type;
+    if (!type) return;
+
+    // Save the cropped and processed file
+    if (type === 'accommodation') {
+      setAccommodationFile(croppedFile);
+    } else if (type === 'transportation') {
+      setTransportationFile(croppedFile);
+    } else if (type === 'other') {
+      setOtherFile(croppedFile);
+    }
+
+    // Create preview URL
+    const previewUrl = createPreviewUrl(croppedFile);
+    setPreviewUrls(prev => {
+      // Clean up old preview URL if exists
+      if (prev[type]) {
+        revokePreviewUrl(prev[type]!);
+      }
+      return { ...prev, [type]: previewUrl };
+    });
+
+    // Close modal
+    setCropModalState({ isOpen: false, type: null, file: null });
+    toast.success("Photo processed successfully");
+  };
+
+  const handleCropCancel = () => {
+    setCropModalState({ isOpen: false, type: null, file: null });
+  };
+
+  const handleRemoveFile = (type: 'accommodation' | 'transportation' | 'other') => {
+    if (type === 'accommodation') {
+      setAccommodationFile(null);
+      if (previewUrls.accommodation) {
+        revokePreviewUrl(previewUrls.accommodation);
+        setPreviewUrls(prev => ({ ...prev, accommodation: undefined }));
+      }
+    } else if (type === 'transportation') {
+      setTransportationFile(null);
+      if (previewUrls.transportation) {
+        revokePreviewUrl(previewUrls.transportation);
+        setPreviewUrls(prev => ({ ...prev, transportation: undefined }));
+      }
+    } else if (type === 'other') {
+      setOtherFile(null);
+      if (previewUrls.other) {
+        revokePreviewUrl(previewUrls.other);
+        setPreviewUrls(prev => ({ ...prev, other: undefined }));
       }
     }
   };
 
   // Calculate total amount from breakdown
-  const calculatedTotal = 
+  const calculatedTotal =
     (parseFloat(formData.accommodation) || 0) +
     (parseFloat(formData.transportation) || 0) +
     (parseFloat(formData.otherAmount) || 0);
@@ -423,14 +516,36 @@ export default function ExpensesPage() {
                       id="accommodationReceipt"
                       type="file"
                       accept="application/pdf,image/jpeg,image/jpg,image/png,image/webp"
-                      capture="camera"
+                      capture="environment"
                       ref={accommodationInputRef}
                       onChange={handleFileChange('accommodation')}
                       className="hidden"
                     />
                     <p className="text-xs text-gray-500 mt-1">Max 10MB - PDF, JPG, PNG, or WebP</p>
                     {accommodationFile && (
-                      <p className="text-xs text-gray-600 mt-1">Selected: {accommodationFile.name}</p>
+                      <div className="mt-2 space-y-2">
+                        <div className="flex items-center justify-between p-2 bg-green-50 border border-green-200 rounded">
+                          <p className="text-xs text-green-800 truncate flex-1">
+                            {accommodationFile.name}
+                          </p>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRemoveFile('accommodation')}
+                            className="h-6 w-6 p-0 ml-2"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        {previewUrls.accommodation && (
+                          <img
+                            src={previewUrls.accommodation}
+                            alt="Accommodation receipt preview"
+                            className="w-full max-h-48 object-contain rounded border"
+                          />
+                        )}
+                      </div>
                     )}
                     {!accommodationFile && (
                       <p className="text-xs text-red-600 mt-1">
@@ -484,14 +599,36 @@ export default function ExpensesPage() {
                       id="transportationReceipt"
                       type="file"
                       accept="application/pdf,image/jpeg,image/jpg,image/png,image/webp"
-                      capture="camera"
+                      capture="environment"
                       ref={transportationInputRef}
                       onChange={handleFileChange('transportation')}
                       className="hidden"
                     />
                     <p className="text-xs text-gray-500 mt-1">Max 10MB - PDF, JPG, PNG, or WebP</p>
                     {transportationFile && (
-                      <p className="text-xs text-gray-600 mt-1">Selected: {transportationFile.name}</p>
+                      <div className="mt-2 space-y-2">
+                        <div className="flex items-center justify-between p-2 bg-green-50 border border-green-200 rounded">
+                          <p className="text-xs text-green-800 truncate flex-1">
+                            {transportationFile.name}
+                          </p>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRemoveFile('transportation')}
+                            className="h-6 w-6 p-0 ml-2"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        {previewUrls.transportation && (
+                          <img
+                            src={previewUrls.transportation}
+                            alt="Transportation receipt preview"
+                            className="w-full max-h-48 object-contain rounded border"
+                          />
+                        )}
+                      </div>
                     )}
                     {!transportationFile && (
                       <p className="text-xs text-red-600 mt-1">
@@ -556,14 +693,36 @@ export default function ExpensesPage() {
                       id="otherReceipt"
                       type="file"
                       accept="application/pdf,image/jpeg,image/jpg,image/png,image/webp"
-                      capture="camera"
+                      capture="environment"
                       ref={otherInputRef}
                       onChange={handleFileChange('other')}
                       className="hidden"
                     />
                     <p className="text-xs text-gray-500 mt-1">Max 10MB - PDF, JPG, PNG, or WebP</p>
                     {otherFile && (
-                      <p className="text-xs text-gray-600 mt-1">Selected: {otherFile.name}</p>
+                      <div className="mt-2 space-y-2">
+                        <div className="flex items-center justify-between p-2 bg-green-50 border border-green-200 rounded">
+                          <p className="text-xs text-green-800 truncate flex-1">
+                            {otherFile.name}
+                          </p>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRemoveFile('other')}
+                            className="h-6 w-6 p-0 ml-2"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        {previewUrls.other && (
+                          <img
+                            src={previewUrls.other}
+                            alt="Other expenses receipt preview"
+                            className="w-full max-h-48 object-contain rounded border"
+                          />
+                        )}
+                      </div>
                     )}
                   </div>
                 </div>
@@ -697,6 +856,14 @@ export default function ExpensesPage() {
       <ReceiptScannerOverlay
         isOpen={scannerOverlay === 'other'}
         onClose={() => setScannerOverlay(null)}
+      />
+
+      {/* Image Crop Modal */}
+      <ImageCropModal
+        isOpen={cropModalState.isOpen}
+        imageFile={cropModalState.file}
+        onSave={handleCropSave}
+        onCancel={handleCropCancel}
       />
     </div>
   );

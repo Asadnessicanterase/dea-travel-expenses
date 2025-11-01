@@ -288,7 +288,7 @@ export default function UserManagementClient() {
             <p className="text-gray-600">Manage users, roles, and permissions</p>
           </div>
           <Button onClick={() => {
-            setFormData({ name: "", email: "", position: "", role: "USER", password: "" });
+            setFormData({ name: "", email: "", position: "", role: "USER", password: "", departmentId: "", });
             setShowAddDialog(true);
           }}>
             <UserPlus className="mr-2 h-4 w-4" />

@@ -11,11 +11,10 @@ export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions);
 
-    // Allow unauthenticated calls for system emails
     const body = await request.json();
     const { to, subject, html, departmentId } = body;
 
-    // If no explicit recipient is passed, fall back to department approver (or global approver)
+    // Determine recipient (explicit or department approver)
     const recipient = to || (await getDepartmentApproverEmail(departmentId));
 
     if (!recipient || !subject || !html) {
@@ -25,9 +24,10 @@ export async function POST(request: Request) {
       );
     }
 
-    // Check if email credentials are configured
-    const emailUser = process.env.EMAIL_USER;
-    const emailPassword = process.env.EMAIL_PASSWORD;
+    // --- Updated to match .env variables ---
+    const emailUser = process.env.EMAIL_SERVER_USER;
+    const emailPassword = process.env.EMAIL_SERVER_PASSWORD;
+    const emailFrom = process.env.EMAIL_FROM || emailUser;
 
     if (!emailUser || !emailPassword) {
       console.log("⚠️ Email credentials not configured. Email not sent:", {
@@ -44,7 +44,7 @@ export async function POST(request: Request) {
       });
     }
 
-    // Create transporter with Gmail SMTP
+    // Gmail SMTP transporter
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
@@ -56,7 +56,7 @@ export async function POST(request: Request) {
     // Send email
     try {
       await transporter.sendMail({
-        from: emailUser,
+        from: emailFrom,
         to: recipient,
         subject,
         html,
