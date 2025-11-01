@@ -274,6 +274,11 @@ export default function ExpensesPage() {
     const accommodationAmount = parseFloat(formData.accommodation) || 0;
     const transportationAmount = parseFloat(formData.transportation) || 0;
 
+    if (calculatedTotal <= 0) {
+      toast.error("Total amount must be greater than zero");
+      return;
+    }
+
     if (accommodationAmount > 0 && !accommodationFile) {
       toast.error("Please upload the accommodation receipt before submitting.");
       return;
@@ -747,7 +752,7 @@ export default function ExpensesPage() {
                 </div>
               </div>
 
-              <Button type="submit" className="w-full gap-2" disabled={submitting}>
+              <Button type="submit" className="w-full gap-2" disabled={submitting || calculatedTotal <= 0}>
                 <Plus className="h-4 w-4" />
                 {submitting ? "Signing and Sending..." : "Sign and Send Expense Claim"}
               </Button>
