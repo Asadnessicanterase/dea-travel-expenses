@@ -516,7 +516,7 @@ export default function ExpensesPage() {
                       id="accommodationReceipt"
                       type="file"
                       accept="application/pdf,image/jpeg,image/jpg,image/png,image/webp"
-                      capture="camera"
+                      capture="environment"
                       ref={accommodationInputRef}
                       onChange={handleFileChange('accommodation')}
                       className="hidden"
@@ -599,7 +599,7 @@ export default function ExpensesPage() {
                       id="transportationReceipt"
                       type="file"
                       accept="application/pdf,image/jpeg,image/jpg,image/png,image/webp"
-                      capture="camera"
+                      capture="environment"
                       ref={transportationInputRef}
                       onChange={handleFileChange('transportation')}
                       className="hidden"
@@ -693,7 +693,7 @@ export default function ExpensesPage() {
                       id="otherReceipt"
                       type="file"
                       accept="application/pdf,image/jpeg,image/jpg,image/png,image/webp"
-                      capture="camera"
+                      capture="environment"
                       ref={otherInputRef}
                       onChange={handleFileChange('other')}
                       className="hidden"

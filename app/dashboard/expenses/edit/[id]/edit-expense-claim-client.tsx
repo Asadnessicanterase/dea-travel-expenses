@@ -442,7 +442,7 @@ export default function EditExpenseClaimClient({ expenseClaim }: { expenseClaim:
                       id="accommodationReceipt"
                       type="file"
                       accept="application/pdf,image/jpeg,image/jpg,image/png,image/webp"
-                      capture="camera"
+                      capture="environment"
                       ref={accommodationInputRef}
                       onChange={handleFileChange('accommodation', setAccommodationFile)}
                       className="hidden"
@@ -536,7 +536,7 @@ export default function EditExpenseClaimClient({ expenseClaim }: { expenseClaim:
                       id="transportationReceipt"
                       type="file"
                       accept="application/pdf,image/jpeg,image/jpg,image/png,image/webp"
-                      capture="camera"
+                      capture="environment"
                       ref={transportationInputRef}
                       onChange={handleFileChange('transportation', setTransportationFile)}
                       className="hidden"
@@ -643,7 +643,7 @@ export default function EditExpenseClaimClient({ expenseClaim }: { expenseClaim:
                   id="otherReceipt"
                   type="file"
                   accept="application/pdf,image/jpeg,image/jpg,image/png,image/webp"
-                  capture="camera"
+                  capture="environment"
                   ref={otherInputRef}
                   onChange={handleFileChange('other', setOtherFile)}
                   className="hidden"
