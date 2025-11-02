@@ -148,10 +148,10 @@ export async function POST(
             voucherData,
             {
               accommodationReceipt:
-                fullExpenseClaim.accommodationReceipt || undefined,
+                fullExpenseClaim.accommodationReceipts?.[0] || undefined,
               transportationReceipt:
-                fullExpenseClaim.transportationReceipt || undefined,
-              otherReceipt: fullExpenseClaim.otherReceipt || undefined,
+                fullExpenseClaim.transportationReceipts?.[0] || undefined,
+              otherReceipt: fullExpenseClaim.otherReceipts?.[0] || undefined,
             }
           );
         } catch (error) {
