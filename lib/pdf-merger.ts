@@ -65,7 +65,7 @@ export async function mergePDFs(sections: PDFSection[], options?: {
       // Load the section PDF
       let sectionPdf;
       try {
-        sectionPdf = await PDFDocument.load(section.pdfBuffer);
+        sectionPdf = await PDFDocument.load(new Uint8Array(section.pdfBuffer));
       } catch (error) {
         console.error(`Error loading PDF section "${section.title}":`, error);
         continue; // Skip this section if it can't be loaded
@@ -110,7 +110,7 @@ export async function simpleMergePDFs(pdfBuffers: Buffer[]): Promise<Buffer> {
     
     for (const pdfBuffer of pdfBuffers) {
       try {
-        const pdf = await PDFDocument.load(pdfBuffer);
+        const pdf = await PDFDocument.load(new Uint8Array(pdfBuffer));
         const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
         copiedPages.forEach((page) => mergedPdf.addPage(page));
       } catch (error) {

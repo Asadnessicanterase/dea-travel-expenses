@@ -103,9 +103,9 @@ interface ExpenseClaim {
   otherAmount?: number;
   otherDescription?: string;
   date: string;
-  accommodationReceipt?: string;
-  transportationReceipt?: string;
-  otherReceipt?: string;
+  accommodationReceipts: string[];
+  transportationReceipts: string[];
+  otherReceipts: string[];
   status: string;
   createdAt: string;
   voucherPdfPath?: string;
@@ -308,9 +308,9 @@ export default function ApprovalsClient() {
     }
   };
 
-  const handleDownloadReceipt = async (claimId: string, type: string) => {
+  const handleDownloadReceipt = async (claimId: string, type: string, index: number = 0) => {
     try {
-      const response = await fetch(`/api/expense-claims/${claimId}/download?type=${type}`);
+      const response = await fetch(`/api/expense-claims/${claimId}/download?type=${type}&index=${index}`);
       if (response.ok) {
         const data = await response.json();
         if (data.url) {
@@ -333,13 +333,13 @@ export default function ApprovalsClient() {
     }
   };
 
-  const handlePreviewReceipt = async (claimId: string, type: string, receiptType: string) => {
+  const handlePreviewReceipt = async (claimId: string, type: string, receiptType: string, index: number = 0) => {
     setPreviewLoading(true);
     setPreviewOpen(true);
     setPreviewType(receiptType);
-    
+
     try {
-      const response = await fetch(`/api/expense-claims/${claimId}/download?type=${type}`);
+      const response = await fetch(`/api/expense-claims/${claimId}/download?type=${type}&index=${index}`);
       if (response.ok) {
         const data = await response.json();
         if (data.url) {
@@ -960,24 +960,31 @@ export default function ApprovalsClient() {
                             <div className="space-y-2">
                               {claim.accommodation !== null && claim.accommodation !== undefined && claim.accommodation > 0 && (
                                 <div className="flex justify-between text-sm">
-                                  <div className="flex items-center gap-2">
+                                  <div className="flex items-center gap-2 flex-wrap">
                                     <span className="text-gray-700">Accommodation:</span>
-                                    {claim.accommodationReceipt && (
-                                      <div className="flex items-center gap-1">
-                                        <button
-                                          onClick={() => handlePreviewReceipt(claim.id, 'accommodation', 'Accommodation')}
-                                          className="text-blue-600 hover:text-blue-700"
-                                          title="Preview receipt"
-                                        >
-                                          <Eye className="h-3 w-3" />
-                                        </button>
-                                        <button
-                                          onClick={() => handleDownloadReceipt(claim.id, 'accommodation')}
-                                          className="text-blue-600 hover:text-blue-700"
-                                          title="Download receipt"
-                                        >
-                                          <Download className="h-3 w-3" />
-                                        </button>
+                                    {claim.accommodationReceipts && claim.accommodationReceipts.length > 0 && (
+                                      <div className="flex items-center gap-1 flex-wrap">
+                                        {claim.accommodationReceipts.map((receipt, index) => (
+                                          <div key={index} className="flex items-center gap-1">
+                                            <button
+                                              onClick={() => handlePreviewReceipt(claim.id, 'accommodation', `Accommodation ${index + 1}`, index)}
+                                              className="text-blue-600 hover:text-blue-700"
+                                              title={`Preview receipt ${index + 1}`}
+                                            >
+                                              <Eye className="h-3 w-3" />
+                                            </button>
+                                            <button
+                                              onClick={() => handleDownloadReceipt(claim.id, 'accommodation', index)}
+                                              className="text-blue-600 hover:text-blue-700"
+                                              title={`Download receipt ${index + 1}`}
+                                            >
+                                              <Download className="h-3 w-3" />
+                                            </button>
+                                            {claim.accommodationReceipts.length > 1 && (
+                                              <span className="text-xs text-gray-500">#{index + 1}</span>
+                                            )}
+                                          </div>
+                                        ))}
                                       </div>
                                     )}
                                   </div>
@@ -988,24 +995,31 @@ export default function ApprovalsClient() {
                               )}
                               {claim.transportation !== null && claim.transportation !== undefined && claim.transportation > 0 && (
                                 <div className="flex justify-between text-sm">
-                                  <div className="flex items-center gap-2">
+                                  <div className="flex items-center gap-2 flex-wrap">
                                     <span className="text-gray-700">Transportation:</span>
-                                    {claim.transportationReceipt && (
-                                      <div className="flex items-center gap-1">
-                                        <button
-                                          onClick={() => handlePreviewReceipt(claim.id, 'transportation', 'Transportation')}
-                                          className="text-blue-600 hover:text-blue-700"
-                                          title="Preview receipt"
-                                        >
-                                          <Eye className="h-3 w-3" />
-                                        </button>
-                                        <button
-                                          onClick={() => handleDownloadReceipt(claim.id, 'transportation')}
-                                          className="text-blue-600 hover:text-blue-700"
-                                          title="Download receipt"
-                                        >
-                                          <Download className="h-3 w-3" />
-                                        </button>
+                                    {claim.transportationReceipts && claim.transportationReceipts.length > 0 && (
+                                      <div className="flex items-center gap-1 flex-wrap">
+                                        {claim.transportationReceipts.map((receipt, index) => (
+                                          <div key={index} className="flex items-center gap-1">
+                                            <button
+                                              onClick={() => handlePreviewReceipt(claim.id, 'transportation', `Transportation ${index + 1}`, index)}
+                                              className="text-blue-600 hover:text-blue-700"
+                                              title={`Preview receipt ${index + 1}`}
+                                            >
+                                              <Eye className="h-3 w-3" />
+                                            </button>
+                                            <button
+                                              onClick={() => handleDownloadReceipt(claim.id, 'transportation', index)}
+                                              className="text-blue-600 hover:text-blue-700"
+                                              title={`Download receipt ${index + 1}`}
+                                            >
+                                              <Download className="h-3 w-3" />
+                                            </button>
+                                            {claim.transportationReceipts.length > 1 && (
+                                              <span className="text-xs text-gray-500">#{index + 1}</span>
+                                            )}
+                                          </div>
+                                        ))}
                                       </div>
                                     )}
                                   </div>
@@ -1016,26 +1030,33 @@ export default function ApprovalsClient() {
                               )}
                               {claim.otherAmount !== null && claim.otherAmount !== undefined && claim.otherAmount > 0 && (
                                 <div className="flex justify-between text-sm">
-                                  <div className="flex items-center gap-2">
+                                  <div className="flex items-center gap-2 flex-wrap">
                                     <span className="text-gray-700">
                                       Other{claim.otherDescription ? ` (${claim.otherDescription})` : ''}:
                                     </span>
-                                    {claim.otherReceipt && (
-                                      <div className="flex items-center gap-1">
-                                        <button
-                                          onClick={() => handlePreviewReceipt(claim.id, 'other', 'Other')}
-                                          className="text-blue-600 hover:text-blue-700"
-                                          title="Preview receipt"
-                                        >
-                                          <Eye className="h-3 w-3" />
-                                        </button>
-                                        <button
-                                          onClick={() => handleDownloadReceipt(claim.id, 'other')}
-                                          className="text-blue-600 hover:text-blue-700"
-                                          title="Download receipt"
-                                        >
-                                          <Download className="h-3 w-3" />
-                                        </button>
+                                    {claim.otherReceipts && claim.otherReceipts.length > 0 && (
+                                      <div className="flex items-center gap-1 flex-wrap">
+                                        {claim.otherReceipts.map((receipt, index) => (
+                                          <div key={index} className="flex items-center gap-1">
+                                            <button
+                                              onClick={() => handlePreviewReceipt(claim.id, 'other', `Other ${index + 1}`, index)}
+                                              className="text-blue-600 hover:text-blue-700"
+                                              title={`Preview receipt ${index + 1}`}
+                                            >
+                                              <Eye className="h-3 w-3" />
+                                            </button>
+                                            <button
+                                              onClick={() => handleDownloadReceipt(claim.id, 'other', index)}
+                                              className="text-blue-600 hover:text-blue-700"
+                                              title={`Download receipt ${index + 1}`}
+                                            >
+                                              <Download className="h-3 w-3" />
+                                            </button>
+                                            {claim.otherReceipts.length > 1 && (
+                                              <span className="text-xs text-gray-500">#{index + 1}</span>
+                                            )}
+                                          </div>
+                                        ))}
                                       </div>
                                     )}
                                   </div>
@@ -1190,24 +1211,31 @@ export default function ApprovalsClient() {
                               <div className="space-y-2">
                                 {claim.accommodation !== null && claim.accommodation !== undefined && claim.accommodation > 0 && (
                                   <div className="flex justify-between text-sm">
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-2 flex-wrap">
                                       <span className="text-gray-700">Accommodation:</span>
-                                      {claim.accommodationReceipt && (
-                                        <div className="flex items-center gap-1">
-                                          <button
-                                            onClick={() => handlePreviewReceipt(claim.id, 'accommodation', 'Accommodation')}
-                                            className="text-blue-600 hover:text-blue-700"
-                                            title="Preview receipt"
-                                          >
-                                            <Eye className="h-3 w-3" />
-                                          </button>
-                                          <button
-                                            onClick={() => handleDownloadReceipt(claim.id, 'accommodation')}
-                                            className="text-blue-600 hover:text-blue-700"
-                                            title="Download receipt"
-                                          >
-                                            <Download className="h-3 w-3" />
-                                          </button>
+                                      {claim.accommodationReceipts && claim.accommodationReceipts.length > 0 && (
+                                        <div className="flex items-center gap-1 flex-wrap">
+                                          {claim.accommodationReceipts.map((receipt, index) => (
+                                            <div key={index} className="flex items-center gap-1">
+                                              <button
+                                                onClick={() => handlePreviewReceipt(claim.id, 'accommodation', `Accommodation ${index + 1}`, index)}
+                                                className="text-blue-600 hover:text-blue-700"
+                                                title={`Preview receipt ${index + 1}`}
+                                              >
+                                                <Eye className="h-3 w-3" />
+                                              </button>
+                                              <button
+                                                onClick={() => handleDownloadReceipt(claim.id, 'accommodation', index)}
+                                                className="text-blue-600 hover:text-blue-700"
+                                                title={`Download receipt ${index + 1}`}
+                                              >
+                                                <Download className="h-3 w-3" />
+                                              </button>
+                                              {claim.accommodationReceipts.length > 1 && (
+                                                <span className="text-xs text-gray-500">#{index + 1}</span>
+                                              )}
+                                            </div>
+                                          ))}
                                         </div>
                                       )}
                                     </div>
@@ -1218,24 +1246,31 @@ export default function ApprovalsClient() {
                                 )}
                                 {claim.transportation !== null && claim.transportation !== undefined && claim.transportation > 0 && (
                                   <div className="flex justify-between text-sm">
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-2 flex-wrap">
                                       <span className="text-gray-700">Transportation:</span>
-                                      {claim.transportationReceipt && (
-                                        <div className="flex items-center gap-1">
-                                          <button
-                                            onClick={() => handlePreviewReceipt(claim.id, 'transportation', 'Transportation')}
-                                            className="text-blue-600 hover:text-blue-700"
-                                            title="Preview receipt"
-                                          >
-                                            <Eye className="h-3 w-3" />
-                                          </button>
-                                          <button
-                                            onClick={() => handleDownloadReceipt(claim.id, 'transportation')}
-                                            className="text-blue-600 hover:text-blue-700"
-                                            title="Download receipt"
-                                          >
-                                            <Download className="h-3 w-3" />
-                                          </button>
+                                      {claim.transportationReceipts && claim.transportationReceipts.length > 0 && (
+                                        <div className="flex items-center gap-1 flex-wrap">
+                                          {claim.transportationReceipts.map((receipt, index) => (
+                                            <div key={index} className="flex items-center gap-1">
+                                              <button
+                                                onClick={() => handlePreviewReceipt(claim.id, 'transportation', `Transportation ${index + 1}`, index)}
+                                                className="text-blue-600 hover:text-blue-700"
+                                                title={`Preview receipt ${index + 1}`}
+                                              >
+                                                <Eye className="h-3 w-3" />
+                                              </button>
+                                              <button
+                                                onClick={() => handleDownloadReceipt(claim.id, 'transportation', index)}
+                                                className="text-blue-600 hover:text-blue-700"
+                                                title={`Download receipt ${index + 1}`}
+                                              >
+                                                <Download className="h-3 w-3" />
+                                              </button>
+                                              {claim.transportationReceipts.length > 1 && (
+                                                <span className="text-xs text-gray-500">#{index + 1}</span>
+                                              )}
+                                            </div>
+                                          ))}
                                         </div>
                                       )}
                                     </div>
@@ -1246,26 +1281,33 @@ export default function ApprovalsClient() {
                                 )}
                                 {claim.otherAmount !== null && claim.otherAmount !== undefined && claim.otherAmount > 0 && (
                                   <div className="flex justify-between text-sm">
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-2 flex-wrap">
                                       <span className="text-gray-700">
                                         Other{claim.otherDescription ? ` (${claim.otherDescription})` : ''}:
                                       </span>
-                                      {claim.otherReceipt && (
-                                        <div className="flex items-center gap-1">
-                                          <button
-                                            onClick={() => handlePreviewReceipt(claim.id, 'other', 'Other')}
-                                            className="text-blue-600 hover:text-blue-700"
-                                            title="Preview receipt"
-                                          >
-                                            <Eye className="h-3 w-3" />
-                                          </button>
-                                          <button
-                                            onClick={() => handleDownloadReceipt(claim.id, 'other')}
-                                            className="text-blue-600 hover:text-blue-700"
-                                            title="Download receipt"
-                                          >
-                                            <Download className="h-3 w-3" />
-                                          </button>
+                                      {claim.otherReceipts && claim.otherReceipts.length > 0 && (
+                                        <div className="flex items-center gap-1 flex-wrap">
+                                          {claim.otherReceipts.map((receipt, index) => (
+                                            <div key={index} className="flex items-center gap-1">
+                                              <button
+                                                onClick={() => handlePreviewReceipt(claim.id, 'other', `Other ${index + 1}`, index)}
+                                                className="text-blue-600 hover:text-blue-700"
+                                                title={`Preview receipt ${index + 1}`}
+                                              >
+                                                <Eye className="h-3 w-3" />
+                                              </button>
+                                              <button
+                                                onClick={() => handleDownloadReceipt(claim.id, 'other', index)}
+                                                className="text-blue-600 hover:text-blue-700"
+                                                title={`Download receipt ${index + 1}`}
+                                              >
+                                                <Download className="h-3 w-3" />
+                                              </button>
+                                              {claim.otherReceipts.length > 1 && (
+                                                <span className="text-xs text-gray-500">#{index + 1}</span>
+                                              )}
+                                            </div>
+                                          ))}
                                         </div>
                                       )}
                                     </div>
@@ -1389,30 +1431,37 @@ export default function ApprovalsClient() {
                                   <div className="space-y-2">
                                     {claim.accommodation !== null && claim.accommodation !== undefined && claim.accommodation > 0 && (
                                       <div className="flex justify-between text-sm">
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-2 flex-wrap">
                                           <span className="text-gray-700">Accommodation:</span>
-                                          {claim.accommodationReceipt && (
-                                            <div className="flex items-center gap-1">
-                                              <button
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  handlePreviewReceipt(claim.id, 'accommodation', 'Accommodation');
-                                                }}
-                                                className="text-blue-600 hover:text-blue-700"
-                                                title="Preview receipt"
-                                              >
-                                                <Eye className="h-3 w-3" />
-                                              </button>
-                                              <button
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  handleDownloadReceipt(claim.id, 'accommodation');
-                                                }}
-                                                className="text-blue-600 hover:text-blue-700"
-                                                title="Download receipt"
-                                              >
-                                                <Download className="h-3 w-3" />
-                                              </button>
+                                          {claim.accommodationReceipts && claim.accommodationReceipts.length > 0 && (
+                                            <div className="flex items-center gap-1 flex-wrap">
+                                              {claim.accommodationReceipts.map((receipt, index) => (
+                                                <div key={index} className="flex items-center gap-1">
+                                                  <button
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      handlePreviewReceipt(claim.id, 'accommodation', `Accommodation ${index + 1}`, index);
+                                                    }}
+                                                    className="text-blue-600 hover:text-blue-700"
+                                                    title={`Preview receipt ${index + 1}`}
+                                                  >
+                                                    <Eye className="h-3 w-3" />
+                                                  </button>
+                                                  <button
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      handleDownloadReceipt(claim.id, 'accommodation', index);
+                                                    }}
+                                                    className="text-blue-600 hover:text-blue-700"
+                                                    title={`Download receipt ${index + 1}`}
+                                                  >
+                                                    <Download className="h-3 w-3" />
+                                                  </button>
+                                                  {claim.accommodationReceipts.length > 1 && (
+                                                    <span className="text-xs text-gray-500">#{index + 1}</span>
+                                                  )}
+                                                </div>
+                                              ))}
                                             </div>
                                           )}
                                         </div>
@@ -1423,30 +1472,37 @@ export default function ApprovalsClient() {
                                     )}
                                     {claim.transportation !== null && claim.transportation !== undefined && claim.transportation > 0 && (
                                       <div className="flex justify-between text-sm">
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-2 flex-wrap">
                                           <span className="text-gray-700">Transportation:</span>
-                                          {claim.transportationReceipt && (
-                                            <div className="flex items-center gap-1">
-                                              <button
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  handlePreviewReceipt(claim.id, 'transportation', 'Transportation');
-                                                }}
-                                                className="text-blue-600 hover:text-blue-700"
-                                                title="Preview receipt"
-                                              >
-                                                <Eye className="h-3 w-3" />
-                                              </button>
-                                              <button
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  handleDownloadReceipt(claim.id, 'transportation');
-                                                }}
-                                                className="text-blue-600 hover:text-blue-700"
-                                                title="Download receipt"
-                                              >
-                                                <Download className="h-3 w-3" />
-                                              </button>
+                                          {claim.transportationReceipts && claim.transportationReceipts.length > 0 && (
+                                            <div className="flex items-center gap-1 flex-wrap">
+                                              {claim.transportationReceipts.map((receipt, index) => (
+                                                <div key={index} className="flex items-center gap-1">
+                                                  <button
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      handlePreviewReceipt(claim.id, 'transportation', `Transportation ${index + 1}`, index);
+                                                    }}
+                                                    className="text-blue-600 hover:text-blue-700"
+                                                    title={`Preview receipt ${index + 1}`}
+                                                  >
+                                                    <Eye className="h-3 w-3" />
+                                                  </button>
+                                                  <button
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      handleDownloadReceipt(claim.id, 'transportation', index);
+                                                    }}
+                                                    className="text-blue-600 hover:text-blue-700"
+                                                    title={`Download receipt ${index + 1}`}
+                                                  >
+                                                    <Download className="h-3 w-3" />
+                                                  </button>
+                                                  {claim.transportationReceipts.length > 1 && (
+                                                    <span className="text-xs text-gray-500">#{index + 1}</span>
+                                                  )}
+                                                </div>
+                                              ))}
                                             </div>
                                           )}
                                         </div>
@@ -1457,32 +1513,39 @@ export default function ApprovalsClient() {
                                     )}
                                     {claim.otherAmount !== null && claim.otherAmount !== undefined && claim.otherAmount > 0 && (
                                       <div className="flex justify-between text-sm">
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-2 flex-wrap">
                                           <span className="text-gray-700">
                                             Other{claim.otherDescription ? ` (${claim.otherDescription})` : ''}:
                                           </span>
-                                          {claim.otherReceipt && (
-                                            <div className="flex items-center gap-1">
-                                              <button
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  handlePreviewReceipt(claim.id, 'other', 'Other');
-                                                }}
-                                                className="text-blue-600 hover:text-blue-700"
-                                                title="Preview receipt"
-                                              >
-                                                <Eye className="h-3 w-3" />
-                                              </button>
-                                              <button
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  handleDownloadReceipt(claim.id, 'other');
-                                                }}
-                                                className="text-blue-600 hover:text-blue-700"
-                                                title="Download receipt"
-                                              >
-                                                <Download className="h-3 w-3" />
-                                              </button>
+                                          {claim.otherReceipts && claim.otherReceipts.length > 0 && (
+                                            <div className="flex items-center gap-1 flex-wrap">
+                                              {claim.otherReceipts.map((receipt, index) => (
+                                                <div key={index} className="flex items-center gap-1">
+                                                  <button
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      handlePreviewReceipt(claim.id, 'other', `Other ${index + 1}`, index);
+                                                    }}
+                                                    className="text-blue-600 hover:text-blue-700"
+                                                    title={`Preview receipt ${index + 1}`}
+                                                  >
+                                                    <Eye className="h-3 w-3" />
+                                                  </button>
+                                                  <button
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      handleDownloadReceipt(claim.id, 'other', index);
+                                                    }}
+                                                    className="text-blue-600 hover:text-blue-700"
+                                                    title={`Download receipt ${index + 1}`}
+                                                  >
+                                                    <Download className="h-3 w-3" />
+                                                  </button>
+                                                  {claim.otherReceipts.length > 1 && (
+                                                    <span className="text-xs text-gray-500">#{index + 1}</span>
+                                                  )}
+                                                </div>
+                                              ))}
                                             </div>
                                           )}
                                         </div>

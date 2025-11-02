@@ -498,7 +498,7 @@ export default function EditExpenseClaimClient({ expenseClaim }: { expenseClaim:
                       disabled={submitting}
                     >
                       <FolderOpen className="h-4 w-4" />
-                      Choose File
+                      Add File
                     </Button>
                   </div>
                   <Input
@@ -608,7 +608,7 @@ export default function EditExpenseClaimClient({ expenseClaim }: { expenseClaim:
                       disabled={submitting}
                     >
                       <FolderOpen className="h-4 w-4" />
-                      Choose File
+                      Add File
                     </Button>
                   </div>
                   <Input
@@ -733,7 +733,7 @@ export default function EditExpenseClaimClient({ expenseClaim }: { expenseClaim:
                     disabled={submitting}
                   >
                     <FolderOpen className="h-4 w-4" />
-                    Choose File
+                    Add File
                   </Button>
                 </div>
                 <Input

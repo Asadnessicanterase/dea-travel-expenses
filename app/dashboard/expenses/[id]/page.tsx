@@ -25,9 +25,9 @@ interface ExpenseClaim {
   otherAmount?: number | null;
   otherDescription?: string | null;
   date: string;
-  accommodationReceipt?: string | null;
-  transportationReceipt?: string | null;
-  otherReceipt?: string | null;
+  accommodationReceipts: string[];
+  transportationReceipts: string[];
+  otherReceipts: string[];
 }
 
 interface TravelRequest {
@@ -373,11 +373,11 @@ export default function ExpensesPage() {
     }
   };
 
-  const handleDownloadReceipt = async (claimId: string, type: 'accommodation' | 'transportation' | 'other') => {
+  const handleDownloadReceipt = async (claimId: string, type: 'accommodation' | 'transportation' | 'other', index: number = 0) => {
     try {
-      const response = await fetch(`/api/expense-claims/${claimId}/download?type=${type}`);
+      const response = await fetch(`/api/expense-claims/${claimId}/download?type=${type}&index=${index}`);
       const data = await response.json();
-      
+
       if (response.ok && data.url) {
         // Create a temporary link and trigger download
         const link = document.createElement('a');
@@ -541,7 +541,7 @@ export default function ExpensesPage() {
                         disabled={submitting}
                       >
                         <FolderOpen className="h-4 w-4" />
-                        Choose File
+                        Add File
                       </Button>
                     </div>
                     <Input
@@ -635,7 +635,7 @@ export default function ExpensesPage() {
                         disabled={submitting}
                       >
                         <FolderOpen className="h-4 w-4" />
-                        Choose File
+                        Add File
                       </Button>
                     </div>
                     <Input
@@ -741,7 +741,7 @@ export default function ExpensesPage() {
                         disabled={submitting}
                       >
                         <FolderOpen className="h-4 w-4" />
-                        Choose File
+                        Add File
                       </Button>
                     </div>
                     <Input
@@ -864,38 +864,67 @@ export default function ExpensesPage() {
                     
                     {/* Receipt Download Buttons */}
                     <div className="mt-3 space-y-1">
-                      {claim.accommodationReceipt && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="gap-2 w-full text-xs"
-                          onClick={() => handleDownloadReceipt(claim.id, 'accommodation')}
-                        >
-                          <Download className="h-3 w-3" />
-                          Accommodation Receipt
-                        </Button>
+                      {/* Accommodation Receipts */}
+                      {claim.accommodationReceipts && claim.accommodationReceipts.length > 0 && (
+                        <div className="space-y-1">
+                          {claim.accommodationReceipts.length > 1 && (
+                            <p className="text-xs font-medium text-gray-600">Accommodation ({claim.accommodationReceipts.length})</p>
+                          )}
+                          {claim.accommodationReceipts.map((receipt, index) => (
+                            <Button
+                              key={index}
+                              size="sm"
+                              variant="outline"
+                              className="gap-2 w-full text-xs"
+                              onClick={() => handleDownloadReceipt(claim.id, 'accommodation', index)}
+                            >
+                              <Download className="h-3 w-3" />
+                              {claim.accommodationReceipts.length > 1 ? `Accommodation Receipt ${index + 1}` : 'Accommodation Receipt'}
+                            </Button>
+                          ))}
+                        </div>
                       )}
-                      {claim.transportationReceipt && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="gap-2 w-full text-xs"
-                          onClick={() => handleDownloadReceipt(claim.id, 'transportation')}
-                        >
-                          <Download className="h-3 w-3" />
-                          Transportation Receipt
-                        </Button>
+
+                      {/* Transportation Receipts */}
+                      {claim.transportationReceipts && claim.transportationReceipts.length > 0 && (
+                        <div className="space-y-1">
+                          {claim.transportationReceipts.length > 1 && (
+                            <p className="text-xs font-medium text-gray-600">Transportation ({claim.transportationReceipts.length})</p>
+                          )}
+                          {claim.transportationReceipts.map((receipt, index) => (
+                            <Button
+                              key={index}
+                              size="sm"
+                              variant="outline"
+                              className="gap-2 w-full text-xs"
+                              onClick={() => handleDownloadReceipt(claim.id, 'transportation', index)}
+                            >
+                              <Download className="h-3 w-3" />
+                              {claim.transportationReceipts.length > 1 ? `Transportation Receipt ${index + 1}` : 'Transportation Receipt'}
+                            </Button>
+                          ))}
+                        </div>
                       )}
-                      {claim.otherReceipt && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="gap-2 w-full text-xs"
-                          onClick={() => handleDownloadReceipt(claim.id, 'other')}
-                        >
-                          <Download className="h-3 w-3" />
-                          Other Receipt
-                        </Button>
+
+                      {/* Other Receipts */}
+                      {claim.otherReceipts && claim.otherReceipts.length > 0 && (
+                        <div className="space-y-1">
+                          {claim.otherReceipts.length > 1 && (
+                            <p className="text-xs font-medium text-gray-600">Other ({claim.otherReceipts.length})</p>
+                          )}
+                          {claim.otherReceipts.map((receipt, index) => (
+                            <Button
+                              key={index}
+                              size="sm"
+                              variant="outline"
+                              className="gap-2 w-full text-xs"
+                              onClick={() => handleDownloadReceipt(claim.id, 'other', index)}
+                            >
+                              <Download className="h-3 w-3" />
+                              {claim.otherReceipts.length > 1 ? `Other Receipt ${index + 1}` : 'Other Receipt'}
+                            </Button>
+                          ))}
+                        </div>
                       )}
                     </div>
                   </div>
