@@ -15,6 +15,16 @@ import { ReceiptScannerOverlay } from "@/components/ui/receipt-scanner-overlay";
 import { ImageCropModal } from "@/components/ui/image-crop-modal";
 import { isImageFile, createPreviewUrl, revokePreviewUrl } from "@/lib/image-utils";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface ExpenseClaim {
   id: string;
@@ -67,6 +77,9 @@ export default function ExpensesPage() {
     type: 'accommodation' | 'transportation' | 'other' | null;
     file: File | null;
   }>({ isOpen: false, type: null, file: null });
+
+  // Confirmation dialog state
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   // Preview URLs - now arrays
   const [previewUrls, setPreviewUrls] = useState<{
@@ -822,9 +835,13 @@ export default function ExpensesPage() {
                 </div>
               </div>
 
-              <Button type="submit" className="w-full gap-2" disabled={submitting || calculatedTotal <= 0}>
-                <Plus className="h-4 w-4" />
-                {submitting ? "Signing and Sending..." : "Sign and Send Expense Claim"}
+              <Button
+                type="button"
+                onClick={() => setShowConfirmDialog(true)}
+                className="w-full gap-2"
+                disabled={submitting || calculatedTotal <= 0}
+              >
+                {submitting ? "Signing and Sending..." : "🖋️📨 Sign & Submit Claim"}
               </Button>
             </form>
             )}
@@ -982,6 +999,29 @@ export default function ExpensesPage() {
         onSave={handleCropSave}
         onCancel={handleCropCancel}
       />
+
+      {/* Confirmation Dialog */}
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Submission</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to submit your expense claim? Please confirm that all receipts are uploaded and details are correct.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                setShowConfirmDialog(false);
+                handleSubmit(e as any);
+              }}
+            >
+              Yes, Submit Claim
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Form Submission Loading Dialog */}
       <Dialog open={submitting} onOpenChange={() => {}}>
