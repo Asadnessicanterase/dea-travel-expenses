@@ -24,9 +24,9 @@ interface ExpenseClaim {
   otherAmount?: number | null;
   otherDescription?: string | null;
   date: string;
-  accommodationReceipt?: string | null;
-  transportationReceipt?: string | null;
-  otherReceipt?: string | null;
+  accommodationReceipts: string[];
+  transportationReceipts: string[];
+  otherReceipts: string[];
   approverComment?: string | null;
   travelRequest: {
     id: string;
@@ -47,13 +47,21 @@ export default function EditExpenseClaimClient({ expenseClaim }: { expenseClaim:
   const [otherDescription, setOtherDescription] = useState(expenseClaim.otherDescription || "");
   const [date, setDate] = useState(expenseClaim.date.split('T')[0]);
 
-  const [accommodationFile, setAccommodationFile] = useState<File | null>(null);
-  const [transportationFile, setTransportationFile] = useState<File | null>(null);
-  const [otherFile, setOtherFile] = useState<File | null>(null);
+  // New file uploads (arrays to support multiple files)
+  const [accommodationFiles, setAccommodationFiles] = useState<File[]>([]);
+  const [transportationFiles, setTransportationFiles] = useState<File[]>([]);
+  const [otherFiles, setOtherFiles] = useState<File[]>([]);
 
-  const [keepExistingAccommodationReceipt, setKeepExistingAccommodationReceipt] = useState(true);
-  const [keepExistingTransportationReceipt, setKeepExistingTransportationReceipt] = useState(true);
-  const [keepExistingOtherReceipt, setKeepExistingOtherReceipt] = useState(true);
+  // Track which existing receipts to keep (array of indices)
+  const [keepAccommodationIndices, setKeepAccommodationIndices] = useState<number[]>(
+    expenseClaim.accommodationReceipts.map((_, index) => index)
+  );
+  const [keepTransportationIndices, setKeepTransportationIndices] = useState<number[]>(
+    expenseClaim.transportationReceipts.map((_, index) => index)
+  );
+  const [keepOtherIndices, setKeepOtherIndices] = useState<number[]>(
+    expenseClaim.otherReceipts.map((_, index) => index)
+  );
 
   const [scannerOverlay, setScannerOverlay] = useState<'accommodation' | 'transportation' | 'other' | null>(null);
   const [isMobile, setIsMobile] = useState(false);
@@ -68,12 +76,12 @@ export default function EditExpenseClaimClient({ expenseClaim }: { expenseClaim:
     file: File | null;
   }>({ isOpen: false, type: null, file: null });
 
-  // Preview URLs
+  // Preview URLs for new uploads (arrays)
   const [previewUrls, setPreviewUrls] = useState<{
-    accommodation?: string;
-    transportation?: string;
-    other?: string;
-  }>({});
+    accommodation: string[];
+    transportation: string[];
+    other: string[];
+  }>({ accommodation: [], transportation: [], other: [] });
 
   // Detect mobile device
   useEffect(() => {
@@ -91,7 +99,7 @@ export default function EditExpenseClaimClient({ expenseClaim }: { expenseClaim:
   // Cleanup preview URLs on unmount
   useEffect(() => {
     return () => {
-      Object.values(previewUrls).forEach(url => {
+      [...previewUrls.accommodation, ...previewUrls.transportation, ...previewUrls.other].forEach(url => {
         if (url) revokePreviewUrl(url);
       });
     };
@@ -129,17 +137,14 @@ export default function EditExpenseClaimClient({ expenseClaim }: { expenseClaim:
     }, 1000);
   };
 
-  const handleFileChange = (
-    type: 'accommodation' | 'transportation' | 'other',
-    setter: (file: File | null) => void
-  ) => (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (type: 'accommodation' | 'transportation' | 'other') => (e: React.ChangeEvent<HTMLInputElement>) => {
     // Hide overlay when file is selected or cancelled
     setScannerOverlay(null);
 
-    if (e.target.files && e.target.files[0]) {
-      const selectedFile = e.target.files[0];
+    if (e.target.files && e.target.files.length > 0) {
+      const selectedFiles = Array.from(e.target.files);
 
-      // Validate file type (PDF or common image formats)
+      // Validate all files
       const allowedTypes = [
         'application/pdf',
         'image/jpeg',
@@ -148,32 +153,42 @@ export default function EditExpenseClaimClient({ expenseClaim }: { expenseClaim:
         'image/webp'
       ];
 
-      if (!allowedTypes.includes(selectedFile.type)) {
-        toast.error("Please select a PDF or image file (JPG, PNG, WebP)");
-        e.target.value = '';
-        return;
-      }
-
-      // Validate file size (10MB limit)
       const maxSize = 10 * 1024 * 1024; // 10MB in bytes
-      if (selectedFile.size > maxSize) {
-        toast.error("File size must be less than 10MB");
-        e.target.value = '';
-        return;
+
+      for (const file of selectedFiles) {
+        if (!allowedTypes.includes(file.type)) {
+          toast.error(`${file.name}: Only PDF and image files (JPG, PNG, WebP) are allowed`);
+          e.target.value = '';
+          return;
+        }
+
+        if (file.size > maxSize) {
+          toast.error(`${file.name}: File size must be less than 10MB`);
+          e.target.value = '';
+          return;
+        }
       }
 
-      // Check if it's an image (open crop modal) or PDF (save directly)
-      if (isImageFile(selectedFile)) {
-        // Open crop modal for images
-        setCropModalState({
-          isOpen: true,
-          type,
-          file: selectedFile,
-        });
-      } else {
-        // For PDFs, save directly without cropping
-        setter(selectedFile);
-      }
+      // Process each file
+      selectedFiles.forEach(file => {
+        if (isImageFile(file)) {
+          // For images, open crop modal one at a time
+          setCropModalState({
+            isOpen: true,
+            type,
+            file,
+          });
+        } else {
+          // For PDFs, add directly to the array
+          if (type === 'accommodation') {
+            setAccommodationFiles(prev => [...prev, file]);
+          } else if (type === 'transportation') {
+            setTransportationFiles(prev => [...prev, file]);
+          } else if (type === 'other') {
+            setOtherFiles(prev => [...prev, file]);
+          }
+        }
+      });
     }
 
     // Reset file input
@@ -184,24 +199,21 @@ export default function EditExpenseClaimClient({ expenseClaim }: { expenseClaim:
     const type = cropModalState.type;
     if (!type) return;
 
-    // Save the cropped and processed file
+    // Add the cropped file to the array
     if (type === 'accommodation') {
-      setAccommodationFile(croppedFile);
+      setAccommodationFiles(prev => [...prev, croppedFile]);
     } else if (type === 'transportation') {
-      setTransportationFile(croppedFile);
+      setTransportationFiles(prev => [...prev, croppedFile]);
     } else if (type === 'other') {
-      setOtherFile(croppedFile);
+      setOtherFiles(prev => [...prev, croppedFile]);
     }
 
-    // Create preview URL
+    // Create preview URL and add to array
     const previewUrl = createPreviewUrl(croppedFile);
-    setPreviewUrls(prev => {
-      // Clean up old preview URL if exists
-      if (prev[type]) {
-        revokePreviewUrl(prev[type]!);
-      }
-      return { ...prev, [type]: previewUrl };
-    });
+    setPreviewUrls(prev => ({
+      ...prev,
+      [type]: [...prev[type], previewUrl]
+    }));
 
     // Close modal
     setCropModalState({ isOpen: false, type: null, file: null });
@@ -212,25 +224,54 @@ export default function EditExpenseClaimClient({ expenseClaim }: { expenseClaim:
     setCropModalState({ isOpen: false, type: null, file: null });
   };
 
-  const handleRemoveFile = (type: 'accommodation' | 'transportation' | 'other') => {
+  const handleRemoveFile = (type: 'accommodation' | 'transportation' | 'other', index: number) => {
     if (type === 'accommodation') {
-      setAccommodationFile(null);
-      if (previewUrls.accommodation) {
-        revokePreviewUrl(previewUrls.accommodation);
-        setPreviewUrls(prev => ({ ...prev, accommodation: undefined }));
+      // Remove file from array
+      setAccommodationFiles(prev => prev.filter((_, i) => i !== index));
+      // Cleanup preview URL
+      if (previewUrls.accommodation[index]) {
+        revokePreviewUrl(previewUrls.accommodation[index]);
       }
+      // Remove preview URL from array
+      setPreviewUrls(prev => ({
+        ...prev,
+        accommodation: prev.accommodation.filter((_, i) => i !== index)
+      }));
     } else if (type === 'transportation') {
-      setTransportationFile(null);
-      if (previewUrls.transportation) {
-        revokePreviewUrl(previewUrls.transportation);
-        setPreviewUrls(prev => ({ ...prev, transportation: undefined }));
+      setTransportationFiles(prev => prev.filter((_, i) => i !== index));
+      if (previewUrls.transportation[index]) {
+        revokePreviewUrl(previewUrls.transportation[index]);
       }
+      setPreviewUrls(prev => ({
+        ...prev,
+        transportation: prev.transportation.filter((_, i) => i !== index)
+      }));
     } else if (type === 'other') {
-      setOtherFile(null);
-      if (previewUrls.other) {
-        revokePreviewUrl(previewUrls.other);
-        setPreviewUrls(prev => ({ ...prev, other: undefined }));
+      setOtherFiles(prev => prev.filter((_, i) => i !== index));
+      if (previewUrls.other[index]) {
+        revokePreviewUrl(previewUrls.other[index]);
       }
+      setPreviewUrls(prev => ({
+        ...prev,
+        other: prev.other.filter((_, i) => i !== index)
+      }));
+    }
+  };
+
+  // Handler to toggle keeping an existing receipt
+  const handleToggleKeepExisting = (type: 'accommodation' | 'transportation' | 'other', index: number) => {
+    if (type === 'accommodation') {
+      setKeepAccommodationIndices(prev =>
+        prev.includes(index) ? prev.filter(i => i !== index) : [...prev, index]
+      );
+    } else if (type === 'transportation') {
+      setKeepTransportationIndices(prev =>
+        prev.includes(index) ? prev.filter(i => i !== index) : [...prev, index]
+      );
+    } else if (type === 'other') {
+      setKeepOtherIndices(prev =>
+        prev.includes(index) ? prev.filter(i => i !== index) : [...prev, index]
+      );
     }
   };
 
@@ -243,27 +284,27 @@ export default function EditExpenseClaimClient({ expenseClaim }: { expenseClaim:
       return;
     }
 
-    // Validate that at least one receipt is provided or kept from existing
-    const hasAccommodationReceipt = keepExistingAccommodationReceipt || accommodationFile !== null;
-    const hasTransportationReceipt = keepExistingTransportationReceipt || transportationFile !== null;
-    const hasOtherReceipt = keepExistingOtherReceipt || otherFile !== null;
-
     const accommodationAmount = parseFloat(accommodation) || 0;
     const transportationAmount = parseFloat(transportation) || 0;
     const otherAmountValue = parseFloat(otherAmount) || 0;
 
+    // Validate that at least one receipt is provided or kept from existing
+    const hasAccommodationReceipt = keepAccommodationIndices.length > 0 || accommodationFiles.length > 0;
+    const hasTransportationReceipt = keepTransportationIndices.length > 0 || transportationFiles.length > 0;
+    const hasOtherReceipt = keepOtherIndices.length > 0 || otherFiles.length > 0;
+
     if (accommodationAmount > 0 && !hasAccommodationReceipt) {
-      toast.error("Please upload accommodation receipt");
+      toast.error("Please upload at least one accommodation receipt or keep an existing one");
       return;
     }
 
     if (transportationAmount > 0 && !hasTransportationReceipt) {
-      toast.error("Please upload transportation receipt");
+      toast.error("Please upload at least one transportation receipt or keep an existing one");
       return;
     }
 
     if (otherAmountValue > 0 && !hasOtherReceipt) {
-      toast.error("Please upload receipt for other expenses");
+      toast.error("Please upload at least one receipt for other expenses or keep an existing one");
       return;
     }
 
@@ -283,24 +324,26 @@ export default function EditExpenseClaimClient({ expenseClaim }: { expenseClaim:
       formData.append("otherDescription", otherDescription);
       formData.append("date", date);
 
-      // Handle file uploads and existing receipts
-      if (accommodationFile) {
-        formData.append("accommodationReceipt", accommodationFile);
-      } else {
-        formData.append("keepAccommodationReceipt", keepExistingAccommodationReceipt.toString());
-      }
+      // Append all new accommodation files
+      accommodationFiles.forEach(file => {
+        formData.append("accommodationReceipts", file);
+      });
+      // Send indices of existing receipts to keep
+      formData.append("keepAccommodationIndices", JSON.stringify(keepAccommodationIndices));
 
-      if (transportationFile) {
-        formData.append("transportationReceipt", transportationFile);
-      } else {
-        formData.append("keepTransportationReceipt", keepExistingTransportationReceipt.toString());
-      }
+      // Append all new transportation files
+      transportationFiles.forEach(file => {
+        formData.append("transportationReceipts", file);
+      });
+      // Send indices of existing receipts to keep
+      formData.append("keepTransportationIndices", JSON.stringify(keepTransportationIndices));
 
-      if (otherFile) {
-        formData.append("otherReceipt", otherFile);
-      } else {
-        formData.append("keepOtherReceipt", keepExistingOtherReceipt.toString());
-      }
+      // Append all new other files
+      otherFiles.forEach(file => {
+        formData.append("otherReceipts", file);
+      });
+      // Send indices of existing receipts to keep
+      formData.append("keepOtherIndices", JSON.stringify(keepOtherIndices));
 
       const response = await fetch(`/api/expense-claims/${expenseClaim.id}/resubmit`, {
         method: "PUT",
@@ -407,87 +450,100 @@ export default function EditExpenseClaimClient({ expenseClaim }: { expenseClaim:
                   disabled={submitting}
                 />
                 
-                {expenseClaim.accommodationReceipt && (
+                {/* Display existing receipts with individual checkboxes */}
+                {expenseClaim.accommodationReceipts.length > 0 && (
                   <div className="mt-2">
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <input
-                        type="checkbox"
-                        id="keepAccommodation"
-                        checked={keepExistingAccommodationReceipt}
-                        onChange={(e) => setKeepExistingAccommodationReceipt(e.target.checked)}
-                        className="rounded"
-                      />
-                      <label htmlFor="keepAccommodation">Keep existing receipt</label>
+                    <Label className="text-sm text-gray-600 mb-1">Existing Receipts</Label>
+                    <div className="space-y-2">
+                      {expenseClaim.accommodationReceipts.map((receipt, index) => (
+                        <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 border rounded">
+                          <input
+                            type="checkbox"
+                            id={`keepAccommodation${index}`}
+                            checked={keepAccommodationIndices.includes(index)}
+                            onChange={() => handleToggleKeepExisting('accommodation', index)}
+                            disabled={submitting}
+                            className="rounded"
+                          />
+                          <label htmlFor={`keepAccommodation${index}`} className="text-xs flex-1 truncate">
+                            Receipt {index + 1}
+                          </label>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}
 
-                {(!expenseClaim.accommodationReceipt || !keepExistingAccommodationReceipt) && (
-                  <div className="mt-2">
-                    <Label className="text-sm">
-                      {accommodationFile ? "Receipt uploaded" : "Upload Receipt (PDF or Image)"}
-                    </Label>
-                    <div className="mt-1 flex items-center gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleTakePhoto('accommodation')}
-                        className="flex-1 gap-2"
-                        disabled={submitting}
-                      >
-                        <Camera className="h-4 w-4" />
-                        Take Photo
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => accommodationInputRef.current?.click()}
-                        className="flex-1 gap-2"
-                        disabled={submitting}
-                      >
-                        <FolderOpen className="h-4 w-4" />
-                        Choose File
-                      </Button>
-                    </div>
-                    <Input
-                      id="accommodationReceipt"
-                      type="file"
-                      accept="application/pdf,image/jpeg,image/jpg,image/png,image/webp"
-                      capture="environment"
-                      ref={accommodationInputRef}
-                      onChange={handleFileChange('accommodation', setAccommodationFile)}
-                      className="hidden"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">Max 10MB - PDF, JPG, PNG, or WebP</p>
-                    {accommodationFile && (
-                      <div className="mt-2 space-y-2">
-                        <div className="flex items-center justify-between p-2 bg-green-50 border border-green-200 rounded">
-                          <p className="text-xs text-green-800 truncate flex-1">
-                            {accommodationFile.name}
-                          </p>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleRemoveFile('accommodation')}
-                            className="h-6 w-6 p-0 ml-2"
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                        {previewUrls.accommodation && (
-                          <img
-                            src={previewUrls.accommodation}
-                            alt="Accommodation receipt preview"
-                            className="w-full max-h-48 object-contain rounded border"
-                          />
-                        )}
-                      </div>
-                    )}
+                {/* Upload new receipts */}
+                <div className="mt-2">
+                  <Label className="text-sm">Upload New Receipts (PDF or Image)</Label>
+                  <div className="mt-1 flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleTakePhoto('accommodation')}
+                      className="flex-1 gap-2"
+                      disabled={submitting}
+                    >
+                      <Camera className="h-4 w-4" />
+                      Take Photo
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => accommodationInputRef.current?.click()}
+                      className="flex-1 gap-2"
+                      disabled={submitting}
+                    >
+                      <FolderOpen className="h-4 w-4" />
+                      Choose File
+                    </Button>
                   </div>
-                )}
+                  <Input
+                    id="accommodationReceipt"
+                    type="file"
+                    accept="application/pdf,image/jpeg,image/jpg,image/png,image/webp"
+                    capture="environment"
+                    multiple
+                    ref={accommodationInputRef}
+                    onChange={handleFileChange('accommodation')}
+                    className="hidden"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Max 10MB per file - PDF, JPG, PNG, or WebP - Multiple files allowed</p>
+
+                  {/* Display all newly uploaded files */}
+                  {accommodationFiles.length > 0 && (
+                    <div className="mt-2 space-y-2">
+                      {accommodationFiles.map((file, index) => (
+                        <div key={index} className="space-y-2">
+                          <div className="flex items-center justify-between p-2 bg-green-50 border border-green-200 rounded">
+                            <p className="text-xs text-green-800 truncate flex-1">
+                              {file.name}
+                            </p>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRemoveFile('accommodation', index)}
+                              className="h-6 w-6 p-0 ml-2"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          {previewUrls.accommodation[index] && (
+                            <img
+                              src={previewUrls.accommodation[index]}
+                              alt={`Accommodation receipt ${index + 1}`}
+                              className="w-full max-h-48 object-contain rounded border"
+                            />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Transportation */}
@@ -504,87 +560,100 @@ export default function EditExpenseClaimClient({ expenseClaim }: { expenseClaim:
                   disabled={submitting}
                 />
                 
-                {expenseClaim.transportationReceipt && (
+                {/* Display existing receipts with individual checkboxes */}
+                {expenseClaim.transportationReceipts.length > 0 && (
                   <div className="mt-2">
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <input
-                        type="checkbox"
-                        id="keepTransportation"
-                        checked={keepExistingTransportationReceipt}
-                        onChange={(e) => setKeepExistingTransportationReceipt(e.target.checked)}
-                        className="rounded"
-                      />
-                      <label htmlFor="keepTransportation">Keep existing receipt</label>
+                    <Label className="text-sm text-gray-600 mb-1">Existing Receipts</Label>
+                    <div className="space-y-2">
+                      {expenseClaim.transportationReceipts.map((receipt, index) => (
+                        <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 border rounded">
+                          <input
+                            type="checkbox"
+                            id={`keepTransportation${index}`}
+                            checked={keepTransportationIndices.includes(index)}
+                            onChange={() => handleToggleKeepExisting('transportation', index)}
+                            disabled={submitting}
+                            className="rounded"
+                          />
+                          <label htmlFor={`keepTransportation${index}`} className="text-xs flex-1 truncate">
+                            Receipt {index + 1}
+                          </label>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}
 
-                {(!expenseClaim.transportationReceipt || !keepExistingTransportationReceipt) && (
-                  <div className="mt-2">
-                    <Label className="text-sm">
-                      {transportationFile ? "Receipt uploaded" : "Upload Receipt (PDF or Image)"}
-                    </Label>
-                    <div className="mt-1 flex items-center gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleTakePhoto('transportation')}
-                        className="flex-1 gap-2"
-                        disabled={submitting}
-                      >
-                        <Camera className="h-4 w-4" />
-                        Take Photo
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => transportationInputRef.current?.click()}
-                        className="flex-1 gap-2"
-                        disabled={submitting}
-                      >
-                        <FolderOpen className="h-4 w-4" />
-                        Choose File
-                      </Button>
-                    </div>
-                    <Input
-                      id="transportationReceipt"
-                      type="file"
-                      accept="application/pdf,image/jpeg,image/jpg,image/png,image/webp"
-                      capture="environment"
-                      ref={transportationInputRef}
-                      onChange={handleFileChange('transportation', setTransportationFile)}
-                      className="hidden"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">Max 10MB - PDF, JPG, PNG, or WebP</p>
-                    {transportationFile && (
-                      <div className="mt-2 space-y-2">
-                        <div className="flex items-center justify-between p-2 bg-green-50 border border-green-200 rounded">
-                          <p className="text-xs text-green-800 truncate flex-1">
-                            {transportationFile.name}
-                          </p>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleRemoveFile('transportation')}
-                            className="h-6 w-6 p-0 ml-2"
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                        {previewUrls.transportation && (
-                          <img
-                            src={previewUrls.transportation}
-                            alt="Transportation receipt preview"
-                            className="w-full max-h-48 object-contain rounded border"
-                          />
-                        )}
-                      </div>
-                    )}
+                {/* Upload new receipts */}
+                <div className="mt-2">
+                  <Label className="text-sm">Upload New Receipts (PDF or Image)</Label>
+                  <div className="mt-1 flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleTakePhoto('transportation')}
+                      className="flex-1 gap-2"
+                      disabled={submitting}
+                    >
+                      <Camera className="h-4 w-4" />
+                      Take Photo
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => transportationInputRef.current?.click()}
+                      className="flex-1 gap-2"
+                      disabled={submitting}
+                    >
+                      <FolderOpen className="h-4 w-4" />
+                      Choose File
+                    </Button>
                   </div>
-                )}
+                  <Input
+                    id="transportationReceipt"
+                    type="file"
+                    accept="application/pdf,image/jpeg,image/jpg,image/png,image/webp"
+                    capture="environment"
+                    multiple
+                    ref={transportationInputRef}
+                    onChange={handleFileChange('transportation')}
+                    className="hidden"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Max 10MB per file - PDF, JPG, PNG, or WebP - Multiple files allowed</p>
+
+                  {/* Display all newly uploaded files */}
+                  {transportationFiles.length > 0 && (
+                    <div className="mt-2 space-y-2">
+                      {transportationFiles.map((file, index) => (
+                        <div key={index} className="space-y-2">
+                          <div className="flex items-center justify-between p-2 bg-green-50 border border-green-200 rounded">
+                            <p className="text-xs text-green-800 truncate flex-1">
+                              {file.name}
+                            </p>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRemoveFile('transportation', index)}
+                              className="h-6 w-6 p-0 ml-2"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          {previewUrls.transportation[index] && (
+                            <img
+                              src={previewUrls.transportation[index]}
+                              alt={`Transportation receipt ${index + 1}`}
+                              className="w-full max-h-48 object-contain rounded border"
+                            />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -615,26 +684,34 @@ export default function EditExpenseClaimClient({ expenseClaim }: { expenseClaim:
               />
             </div>
 
-            {expenseClaim.otherReceipt && (
+            {/* Display existing other receipts with individual checkboxes */}
+            {expenseClaim.otherReceipts.length > 0 && (
               <div className="mt-2">
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <input
-                    type="checkbox"
-                    id="keepOther"
-                    checked={keepExistingOtherReceipt}
-                    onChange={(e) => setKeepExistingOtherReceipt(e.target.checked)}
-                    className="rounded"
-                  />
-                  <label htmlFor="keepOther">Keep existing other expenses receipt</label>
+                <Label className="text-sm text-gray-600 mb-1">Existing Other Expense Receipts</Label>
+                <div className="space-y-2">
+                  {expenseClaim.otherReceipts.map((receipt, index) => (
+                    <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 border rounded">
+                      <input
+                        type="checkbox"
+                        id={`keepOther${index}`}
+                        checked={keepOtherIndices.includes(index)}
+                        onChange={() => handleToggleKeepExisting('other', index)}
+                        disabled={submitting}
+                        className="rounded"
+                      />
+                      <label htmlFor={`keepOther${index}`} className="text-xs flex-1 truncate">
+                        Receipt {index + 1}
+                      </label>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
 
-            {(!expenseClaim.otherReceipt || !keepExistingOtherReceipt) && parseFloat(otherAmount) > 0 && (
+            {/* Upload new other expense receipts */}
+            {parseFloat(otherAmount) > 0 && (
               <div className="space-y-2">
-                <Label className="text-sm">
-                  {otherFile ? "Receipt uploaded" : "Upload Other Expenses Receipt (PDF or Image)"}
-                </Label>
+                <Label className="text-sm">Upload New Other Expense Receipts (PDF or Image)</Label>
                 <div className="flex items-center gap-2">
                   <Button
                     type="button"
@@ -664,34 +741,41 @@ export default function EditExpenseClaimClient({ expenseClaim }: { expenseClaim:
                   type="file"
                   accept="application/pdf,image/jpeg,image/jpg,image/png,image/webp"
                   capture="environment"
+                  multiple
                   ref={otherInputRef}
-                  onChange={handleFileChange('other', setOtherFile)}
+                  onChange={handleFileChange('other')}
                   className="hidden"
                 />
-                <p className="text-xs text-gray-500">Max 10MB - PDF, JPG, PNG, or WebP</p>
-                {otherFile && (
+                <p className="text-xs text-gray-500">Max 10MB per file - PDF, JPG, PNG, or WebP - Multiple files allowed</p>
+
+                {/* Display all newly uploaded other expense files */}
+                {otherFiles.length > 0 && (
                   <div className="mt-2 space-y-2">
-                    <div className="flex items-center justify-between p-2 bg-green-50 border border-green-200 rounded">
-                      <p className="text-xs text-green-800 truncate flex-1">
-                        {otherFile.name}
-                      </p>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleRemoveFile('other')}
-                        className="h-6 w-6 p-0 ml-2"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    {previewUrls.other && (
-                      <img
-                        src={previewUrls.other}
-                        alt="Other expenses receipt preview"
-                        className="w-full max-h-48 object-contain rounded border"
-                      />
-                    )}
+                    {otherFiles.map((file, index) => (
+                      <div key={index} className="space-y-2">
+                        <div className="flex items-center justify-between p-2 bg-green-50 border border-green-200 rounded">
+                          <p className="text-xs text-green-800 truncate flex-1">
+                            {file.name}
+                          </p>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRemoveFile('other', index)}
+                            className="h-6 w-6 p-0 ml-2"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        {previewUrls.other[index] && (
+                          <img
+                            src={previewUrls.other[index]}
+                            alt={`Other expenses receipt ${index + 1}`}
+                            className="w-full max-h-48 object-contain rounded border"
+                          />
+                        )}
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>

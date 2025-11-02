@@ -52,9 +52,9 @@ export default function ExpensesPage() {
     otherAmount: "",
     otherDescription: "",
   });
-  const [accommodationFile, setAccommodationFile] = useState<File | null>(null);
-  const [transportationFile, setTransportationFile] = useState<File | null>(null);
-  const [otherFile, setOtherFile] = useState<File | null>(null);
+  const [accommodationFiles, setAccommodationFiles] = useState<File[]>([]);
+  const [transportationFiles, setTransportationFiles] = useState<File[]>([]);
+  const [otherFiles, setOtherFiles] = useState<File[]>([]);
   const [scannerOverlay, setScannerOverlay] = useState<'accommodation' | 'transportation' | 'other' | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   const accommodationInputRef = useRef<HTMLInputElement>(null);
@@ -68,12 +68,12 @@ export default function ExpensesPage() {
     file: File | null;
   }>({ isOpen: false, type: null, file: null });
 
-  // Preview URLs
+  // Preview URLs - now arrays
   const [previewUrls, setPreviewUrls] = useState<{
-    accommodation?: string;
-    transportation?: string;
-    other?: string;
-  }>({});
+    accommodation: string[];
+    transportation: string[];
+    other: string[];
+  }>({ accommodation: [], transportation: [], other: [] });
 
   useEffect(() => {
     if (id) {
@@ -97,7 +97,8 @@ export default function ExpensesPage() {
   // Cleanup preview URLs on unmount
   useEffect(() => {
     return () => {
-      Object.values(previewUrls).forEach(url => {
+      // Cleanup all preview URLs
+      [...previewUrls.accommodation, ...previewUrls.transportation, ...previewUrls.other].forEach(url => {
         if (url) revokePreviewUrl(url);
       });
     };
@@ -158,10 +159,10 @@ export default function ExpensesPage() {
     // Hide overlay when file is selected or cancelled
     setScannerOverlay(null);
 
-    if (e.target.files && e.target.files[0]) {
-      const selectedFile = e.target.files[0];
+    if (e.target.files && e.target.files.length > 0) {
+      const selectedFiles = Array.from(e.target.files);
 
-      // Validate file type (PDF or common image formats)
+      // Validate all files
       const allowedTypes = [
         'application/pdf',
         'image/jpeg',
@@ -170,38 +171,42 @@ export default function ExpensesPage() {
         'image/webp'
       ];
 
-      if (!allowedTypes.includes(selectedFile.type)) {
-        toast.error("Please select a PDF or image file (JPG, PNG, WebP)");
-        e.target.value = '';
-        return;
-      }
-
-      // Validate file size (10MB limit)
       const maxSize = 10 * 1024 * 1024; // 10MB in bytes
-      if (selectedFile.size > maxSize) {
-        toast.error("File size must be less than 10MB");
-        e.target.value = '';
-        return;
-      }
 
-      // Check if it's an image (open crop modal) or PDF (save directly)
-      if (isImageFile(selectedFile)) {
-        // Open crop modal for images
-        setCropModalState({
-          isOpen: true,
-          type,
-          file: selectedFile,
-        });
-      } else {
-        // For PDFs, save directly without cropping
-        if (type === 'accommodation') {
-          setAccommodationFile(selectedFile);
-        } else if (type === 'transportation') {
-          setTransportationFile(selectedFile);
-        } else if (type === 'other') {
-          setOtherFile(selectedFile);
+      for (const file of selectedFiles) {
+        if (!allowedTypes.includes(file.type)) {
+          toast.error(`${file.name}: Only PDF and image files (JPG, PNG, WebP) are allowed`);
+          e.target.value = '';
+          return;
+        }
+
+        if (file.size > maxSize) {
+          toast.error(`${file.name}: File size must be less than 10MB`);
+          e.target.value = '';
+          return;
         }
       }
+
+      // Process each file
+      selectedFiles.forEach(file => {
+        if (isImageFile(file)) {
+          // For images, open crop modal one at a time
+          setCropModalState({
+            isOpen: true,
+            type,
+            file,
+          });
+        } else {
+          // For PDFs, add directly to the array
+          if (type === 'accommodation') {
+            setAccommodationFiles(prev => [...prev, file]);
+          } else if (type === 'transportation') {
+            setTransportationFiles(prev => [...prev, file]);
+          } else if (type === 'other') {
+            setOtherFiles(prev => [...prev, file]);
+          }
+        }
+      });
     }
 
     // Reset file input
@@ -212,24 +217,21 @@ export default function ExpensesPage() {
     const type = cropModalState.type;
     if (!type) return;
 
-    // Save the cropped and processed file
+    // Add the cropped file to the array
     if (type === 'accommodation') {
-      setAccommodationFile(croppedFile);
+      setAccommodationFiles(prev => [...prev, croppedFile]);
     } else if (type === 'transportation') {
-      setTransportationFile(croppedFile);
+      setTransportationFiles(prev => [...prev, croppedFile]);
     } else if (type === 'other') {
-      setOtherFile(croppedFile);
+      setOtherFiles(prev => [...prev, croppedFile]);
     }
 
-    // Create preview URL
+    // Create preview URL and add to array
     const previewUrl = createPreviewUrl(croppedFile);
-    setPreviewUrls(prev => {
-      // Clean up old preview URL if exists
-      if (prev[type]) {
-        revokePreviewUrl(prev[type]!);
-      }
-      return { ...prev, [type]: previewUrl };
-    });
+    setPreviewUrls(prev => ({
+      ...prev,
+      [type]: [...prev[type], previewUrl]
+    }));
 
     // Close modal
     setCropModalState({ isOpen: false, type: null, file: null });
@@ -240,25 +242,37 @@ export default function ExpensesPage() {
     setCropModalState({ isOpen: false, type: null, file: null });
   };
 
-  const handleRemoveFile = (type: 'accommodation' | 'transportation' | 'other') => {
+  const handleRemoveFile = (type: 'accommodation' | 'transportation' | 'other', index: number) => {
     if (type === 'accommodation') {
-      setAccommodationFile(null);
-      if (previewUrls.accommodation) {
-        revokePreviewUrl(previewUrls.accommodation);
-        setPreviewUrls(prev => ({ ...prev, accommodation: undefined }));
+      // Remove file from array
+      setAccommodationFiles(prev => prev.filter((_, i) => i !== index));
+      // Cleanup preview URL
+      if (previewUrls.accommodation[index]) {
+        revokePreviewUrl(previewUrls.accommodation[index]);
       }
+      // Remove preview URL from array
+      setPreviewUrls(prev => ({
+        ...prev,
+        accommodation: prev.accommodation.filter((_, i) => i !== index)
+      }));
     } else if (type === 'transportation') {
-      setTransportationFile(null);
-      if (previewUrls.transportation) {
-        revokePreviewUrl(previewUrls.transportation);
-        setPreviewUrls(prev => ({ ...prev, transportation: undefined }));
+      setTransportationFiles(prev => prev.filter((_, i) => i !== index));
+      if (previewUrls.transportation[index]) {
+        revokePreviewUrl(previewUrls.transportation[index]);
       }
+      setPreviewUrls(prev => ({
+        ...prev,
+        transportation: prev.transportation.filter((_, i) => i !== index)
+      }));
     } else if (type === 'other') {
-      setOtherFile(null);
-      if (previewUrls.other) {
-        revokePreviewUrl(previewUrls.other);
-        setPreviewUrls(prev => ({ ...prev, other: undefined }));
+      setOtherFiles(prev => prev.filter((_, i) => i !== index));
+      if (previewUrls.other[index]) {
+        revokePreviewUrl(previewUrls.other[index]);
       }
+      setPreviewUrls(prev => ({
+        ...prev,
+        other: prev.other.filter((_, i) => i !== index)
+      }));
     }
   };
 
@@ -279,13 +293,13 @@ export default function ExpensesPage() {
       return;
     }
 
-    if (accommodationAmount > 0 && !accommodationFile) {
-      toast.error("Please upload the accommodation receipt before submitting.");
+    if (accommodationAmount > 0 && accommodationFiles.length === 0) {
+      toast.error("Please upload at least one accommodation receipt before submitting.");
       return;
     }
 
-    if (transportationAmount > 0 && !transportationFile) {
-      toast.error("Please upload the transportation receipt before submitting.");
+    if (transportationAmount > 0 && transportationFiles.length === 0) {
+      toast.error("Please upload at least one transportation receipt before submitting.");
       return;
     }
 
@@ -305,15 +319,21 @@ export default function ExpensesPage() {
       // Auto-set submission date to today
       const today = new Date().toISOString().split('T')[0];
       formDataToSend.append("date", today);
-      if (accommodationFile) {
-        formDataToSend.append("accommodationReceipt", accommodationFile);
-      }
-      if (transportationFile) {
-        formDataToSend.append("transportationReceipt", transportationFile);
-      }
-      if (otherFile) {
-        formDataToSend.append("otherReceipt", otherFile);
-      }
+
+      // Append all accommodation files
+      accommodationFiles.forEach(file => {
+        formDataToSend.append("accommodationReceipts", file);
+      });
+
+      // Append all transportation files
+      transportationFiles.forEach(file => {
+        formDataToSend.append("transportationReceipts", file);
+      });
+
+      // Append all other files
+      otherFiles.forEach(file => {
+        formDataToSend.append("otherReceipts", file);
+      });
 
       const response = await fetch("/api/expense-claims", {
         method: "POST",
@@ -322,23 +342,25 @@ export default function ExpensesPage() {
 
       if (response.ok) {
         toast.success("Expense claim added successfully");
-        setFormData({ 
-          description: "", 
-          accommodation: "", 
-          transportation: "", 
-          otherAmount: "", 
+        setFormData({
+          description: "",
+          accommodation: "",
+          transportation: "",
+          otherAmount: "",
           otherDescription: ""
         });
-        setAccommodationFile(null);
-        setTransportationFile(null);
-        setOtherFile(null);
-        // Reset file inputs
-        const accommodationInput = document.getElementById("accommodationReceipt") as HTMLInputElement;
-        const transportationInput = document.getElementById("transportationReceipt") as HTMLInputElement;
-        const otherInput = document.getElementById("otherReceipt") as HTMLInputElement;
-        if (accommodationInput) accommodationInput.value = "";
-        if (transportationInput) transportationInput.value = "";
-        if (otherInput) otherInput.value = "";
+
+        // Clear all files
+        setAccommodationFiles([]);
+        setTransportationFiles([]);
+        setOtherFiles([]);
+
+        // Cleanup all preview URLs
+        [...previewUrls.accommodation, ...previewUrls.transportation, ...previewUrls.other].forEach(url => {
+          if (url) revokePreviewUrl(url);
+        });
+        setPreviewUrls({ accommodation: [], transportation: [], other: [] });
+
         fetchRequest();
       } else {
         const data = await response.json();
@@ -527,39 +549,47 @@ export default function ExpensesPage() {
                       type="file"
                       accept="application/pdf,image/jpeg,image/jpg,image/png,image/webp"
                       capture="environment"
+                      multiple
                       ref={accommodationInputRef}
                       onChange={handleFileChange('accommodation')}
                       className="hidden"
                     />
-                    <p className="text-xs text-gray-500 mt-1">Max 10MB - PDF, JPG, PNG, or WebP</p>
-                    {accommodationFile && (
+                    <p className="text-xs text-gray-500 mt-1">Max 10MB per file - PDF, JPG, PNG, or WebP - Multiple files allowed</p>
+
+                    {/* Display all uploaded files */}
+                    {accommodationFiles.length > 0 && (
                       <div className="mt-2 space-y-2">
-                        <div className="flex items-center justify-between p-2 bg-green-50 border border-green-200 rounded">
-                          <p className="text-xs text-green-800 truncate flex-1">
-                            {accommodationFile.name}
-                          </p>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleRemoveFile('accommodation')}
-                            className="h-6 w-6 p-0 ml-2"
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                        {previewUrls.accommodation && (
-                          <img
-                            src={previewUrls.accommodation}
-                            alt="Accommodation receipt preview"
-                            className="w-full max-h-48 object-contain rounded border"
-                          />
-                        )}
+                        {accommodationFiles.map((file, index) => (
+                          <div key={index} className="space-y-2">
+                            <div className="flex items-center justify-between p-2 bg-green-50 border border-green-200 rounded">
+                              <p className="text-xs text-green-800 truncate flex-1">
+                                {file.name}
+                              </p>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleRemoveFile('accommodation', index)}
+                                className="h-6 w-6 p-0 ml-2"
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                            {previewUrls.accommodation[index] && (
+                              <img
+                                src={previewUrls.accommodation[index]}
+                                alt={`Accommodation receipt ${index + 1}`}
+                                className="w-full max-h-48 object-contain rounded border"
+                              />
+                            )}
+                          </div>
+                        ))}
                       </div>
                     )}
-                    {!accommodationFile && (
+
+                    {accommodationFiles.length === 0 && (
                       <p className="text-xs text-red-600 mt-1">
-                        An accommodation receipt is required when claiming this expense.
+                        At least one accommodation receipt is required when claiming this expense.
                       </p>
                     )}
                   </div>
@@ -613,39 +643,47 @@ export default function ExpensesPage() {
                       type="file"
                       accept="application/pdf,image/jpeg,image/jpg,image/png,image/webp"
                       capture="environment"
+                      multiple
                       ref={transportationInputRef}
                       onChange={handleFileChange('transportation')}
                       className="hidden"
                     />
-                    <p className="text-xs text-gray-500 mt-1">Max 10MB - PDF, JPG, PNG, or WebP</p>
-                    {transportationFile && (
+                    <p className="text-xs text-gray-500 mt-1">Max 10MB per file - PDF, JPG, PNG, or WebP - Multiple files allowed</p>
+
+                    {/* Display all uploaded files */}
+                    {transportationFiles.length > 0 && (
                       <div className="mt-2 space-y-2">
-                        <div className="flex items-center justify-between p-2 bg-green-50 border border-green-200 rounded">
-                          <p className="text-xs text-green-800 truncate flex-1">
-                            {transportationFile.name}
-                          </p>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleRemoveFile('transportation')}
-                            className="h-6 w-6 p-0 ml-2"
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                        {previewUrls.transportation && (
-                          <img
-                            src={previewUrls.transportation}
-                            alt="Transportation receipt preview"
-                            className="w-full max-h-48 object-contain rounded border"
-                          />
-                        )}
+                        {transportationFiles.map((file, index) => (
+                          <div key={index} className="space-y-2">
+                            <div className="flex items-center justify-between p-2 bg-green-50 border border-green-200 rounded">
+                              <p className="text-xs text-green-800 truncate flex-1">
+                                {file.name}
+                              </p>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleRemoveFile('transportation', index)}
+                                className="h-6 w-6 p-0 ml-2"
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                            {previewUrls.transportation[index] && (
+                              <img
+                                src={previewUrls.transportation[index]}
+                                alt={`Transportation receipt ${index + 1}`}
+                                className="w-full max-h-48 object-contain rounded border"
+                              />
+                            )}
+                          </div>
+                        ))}
                       </div>
                     )}
-                    {!transportationFile && (
+
+                    {transportationFiles.length === 0 && (
                       <p className="text-xs text-red-600 mt-1">
-                        A transportation receipt is required when claiming this expense.
+                        At least one transportation receipt is required when claiming this expense.
                       </p>
                     )}
                   </div>
@@ -711,34 +749,41 @@ export default function ExpensesPage() {
                       type="file"
                       accept="application/pdf,image/jpeg,image/jpg,image/png,image/webp"
                       capture="environment"
+                      multiple
                       ref={otherInputRef}
                       onChange={handleFileChange('other')}
                       className="hidden"
                     />
-                    <p className="text-xs text-gray-500 mt-1">Max 10MB - PDF, JPG, PNG, or WebP</p>
-                    {otherFile && (
+                    <p className="text-xs text-gray-500 mt-1">Max 10MB per file - PDF, JPG, PNG, or WebP - Multiple files allowed</p>
+
+                    {/* Display all uploaded files */}
+                    {otherFiles.length > 0 && (
                       <div className="mt-2 space-y-2">
-                        <div className="flex items-center justify-between p-2 bg-green-50 border border-green-200 rounded">
-                          <p className="text-xs text-green-800 truncate flex-1">
-                            {otherFile.name}
-                          </p>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleRemoveFile('other')}
-                            className="h-6 w-6 p-0 ml-2"
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                        {previewUrls.other && (
-                          <img
-                            src={previewUrls.other}
-                            alt="Other expenses receipt preview"
-                            className="w-full max-h-48 object-contain rounded border"
-                          />
-                        )}
+                        {otherFiles.map((file, index) => (
+                          <div key={index} className="space-y-2">
+                            <div className="flex items-center justify-between p-2 bg-green-50 border border-green-200 rounded">
+                              <p className="text-xs text-green-800 truncate flex-1">
+                                {file.name}
+                              </p>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleRemoveFile('other', index)}
+                                className="h-6 w-6 p-0 ml-2"
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                            {previewUrls.other[index] && (
+                              <img
+                                src={previewUrls.other[index]}
+                                alt={`Other expenses receipt ${index + 1}`}
+                                className="w-full max-h-48 object-contain rounded border"
+                              />
+                            )}
+                          </div>
+                        ))}
                       </div>
                     )}
                   </div>
