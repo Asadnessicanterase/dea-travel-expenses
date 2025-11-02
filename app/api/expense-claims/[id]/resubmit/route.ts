@@ -60,13 +60,18 @@ export async function PUT(
     const otherDescription = formData.get("otherDescription") as string;
     const date = formData.get("date") as string;
 
-    const accommodationFile = formData.get("accommodationReceipt") as File | null;
-    const transportationFile = formData.get("transportationReceipt") as File | null;
-    const otherFile = formData.get("otherReceipt") as File | null;
+    const accommodationFiles = formData.getAll("accommodationReceipts") as File[];
+    const transportationFiles = formData.getAll("transportationReceipts") as File[];
+    const otherFiles = formData.getAll("otherReceipts") as File[];
 
-    const keepAccommodationReceipt = formData.get("keepAccommodationReceipt") === "true";
-    const keepTransportationReceipt = formData.get("keepTransportationReceipt") === "true";
-    const keepOtherReceipt = formData.get("keepOtherReceipt") === "true";
+    // Get which existing receipts to keep (sent as JSON strings of indices to keep)
+    const keepAccommodationIndices = formData.get("keepAccommodationIndices");
+    const keepTransportationIndices = formData.get("keepTransportationIndices");
+    const keepOtherIndices = formData.get("keepOtherIndices");
+
+    const keptAccommodationIndices = keepAccommodationIndices ? JSON.parse(keepAccommodationIndices as string) : [];
+    const keptTransportationIndices = keepTransportationIndices ? JSON.parse(keepTransportationIndices as string) : [];
+    const keptOtherIndices = keepOtherIndices ? JSON.parse(keepOtherIndices as string) : [];
 
     if (!amount || !date) {
       return NextResponse.json(
@@ -83,24 +88,20 @@ export async function PUT(
     const accommodationAmount = accommodation ? parseFloat(accommodation) : 0;
     const transportationAmount = transportation ? parseFloat(transportation) : 0;
 
-    if (
-      accommodationAmount > 0 &&
-      !accommodationFile &&
-      !(keepAccommodationReceipt && expenseClaim.accommodationReceipt)
-    ) {
+    // Check if at least one receipt exists (new uploads + kept existing)
+    const totalAccommodationReceipts = accommodationFiles.length + keptAccommodationIndices.length;
+    const totalTransportationReceipts = transportationFiles.length + keptTransportationIndices.length;
+
+    if (accommodationAmount > 0 && totalAccommodationReceipts === 0) {
       return NextResponse.json(
-        { error: "Accommodation claims must include an uploaded receipt." },
+        { error: "Accommodation claims must include at least one uploaded receipt." },
         { status: 400 }
       );
     }
 
-    if (
-      transportationAmount > 0 &&
-      !transportationFile &&
-      !(keepTransportationReceipt && expenseClaim.transportationReceipt)
-    ) {
+    if (transportationAmount > 0 && totalTransportationReceipts === 0) {
       return NextResponse.json(
-        { error: "Transportation claims must include an uploaded receipt." },
+        { error: "Transportation claims must include at least one uploaded receipt." },
         { status: 400 }
       );
     }
@@ -125,83 +126,91 @@ export async function PUT(
       }
     };
 
-    let accommodationReceiptPath = expenseClaim.accommodationReceipt;
-    let transportationReceiptPath = expenseClaim.transportationReceipt;
-    let otherReceiptPath = expenseClaim.otherReceipt;
+    // Process accommodation receipts
+    const accommodationReceiptPaths: string[] = [];
 
-    // Handle accommodation receipt
-    if (accommodationFile) {
-      validateFile(accommodationFile, 'Accommodation receipt');
-      // Delete old receipt if exists
-      if (expenseClaim.accommodationReceipt) {
-        try {
-          await deleteFile(expenseClaim.accommodationReceipt);
-        } catch (error) {
-          console.error("Failed to delete old accommodation receipt:", error);
-        }
+    // Keep selected existing receipts
+    for (const index of keptAccommodationIndices) {
+      if (index < expenseClaim.accommodationReceipts.length) {
+        accommodationReceiptPaths.push(expenseClaim.accommodationReceipts[index]);
       }
-      const buffer = Buffer.from(await accommodationFile.arrayBuffer());
-      accommodationReceiptPath = await uploadFile(buffer, accommodationFile.name);
-    } else if (!keepAccommodationReceipt) {
-      // Delete the receipt if not keeping it
-      if (expenseClaim.accommodationReceipt) {
-        try {
-          await deleteFile(expenseClaim.accommodationReceipt);
-        } catch (error) {
-          console.error("Failed to delete accommodation receipt:", error);
-        }
-      }
-      accommodationReceiptPath = null;
     }
 
-    // Handle transportation receipt
-    if (transportationFile) {
-      validateFile(transportationFile, 'Transportation receipt');
-      // Delete old receipt if exists
-      if (expenseClaim.transportationReceipt) {
+    // Delete receipts that are not being kept
+    for (let i = 0; i < expenseClaim.accommodationReceipts.length; i++) {
+      if (!keptAccommodationIndices.includes(i)) {
         try {
-          await deleteFile(expenseClaim.transportationReceipt);
+          await deleteFile(expenseClaim.accommodationReceipts[i]);
         } catch (error) {
-          console.error("Failed to delete old transportation receipt:", error);
+          console.error(`Failed to delete accommodation receipt ${i}:`, error);
         }
       }
-      const buffer = Buffer.from(await transportationFile.arrayBuffer());
-      transportationReceiptPath = await uploadFile(buffer, transportationFile.name);
-    } else if (!keepTransportationReceipt) {
-      // Delete the receipt if not keeping it
-      if (expenseClaim.transportationReceipt) {
-        try {
-          await deleteFile(expenseClaim.transportationReceipt);
-        } catch (error) {
-          console.error("Failed to delete transportation receipt:", error);
-        }
-      }
-      transportationReceiptPath = null;
     }
 
-    // Handle other receipt
-    if (otherFile) {
-      validateFile(otherFile, 'Other receipt');
-      // Delete old receipt if exists
-      if (expenseClaim.otherReceipt) {
+    // Upload new accommodation files
+    for (const file of accommodationFiles) {
+      validateFile(file, 'Accommodation receipt');
+      const buffer = Buffer.from(await file.arrayBuffer());
+      const path = await uploadFile(buffer, file.name);
+      accommodationReceiptPaths.push(path);
+    }
+
+    // Process transportation receipts
+    const transportationReceiptPaths: string[] = [];
+
+    // Keep selected existing receipts
+    for (const index of keptTransportationIndices) {
+      if (index < expenseClaim.transportationReceipts.length) {
+        transportationReceiptPaths.push(expenseClaim.transportationReceipts[index]);
+      }
+    }
+
+    // Delete receipts that are not being kept
+    for (let i = 0; i < expenseClaim.transportationReceipts.length; i++) {
+      if (!keptTransportationIndices.includes(i)) {
         try {
-          await deleteFile(expenseClaim.otherReceipt);
+          await deleteFile(expenseClaim.transportationReceipts[i]);
         } catch (error) {
-          console.error("Failed to delete old other receipt:", error);
+          console.error(`Failed to delete transportation receipt ${i}:`, error);
         }
       }
-      const buffer = Buffer.from(await otherFile.arrayBuffer());
-      otherReceiptPath = await uploadFile(buffer, otherFile.name);
-    } else if (!keepOtherReceipt) {
-      // Delete the receipt if not keeping it
-      if (expenseClaim.otherReceipt) {
+    }
+
+    // Upload new transportation files
+    for (const file of transportationFiles) {
+      validateFile(file, 'Transportation receipt');
+      const buffer = Buffer.from(await file.arrayBuffer());
+      const path = await uploadFile(buffer, file.name);
+      transportationReceiptPaths.push(path);
+    }
+
+    // Process other receipts
+    const otherReceiptPaths: string[] = [];
+
+    // Keep selected existing receipts
+    for (const index of keptOtherIndices) {
+      if (index < expenseClaim.otherReceipts.length) {
+        otherReceiptPaths.push(expenseClaim.otherReceipts[index]);
+      }
+    }
+
+    // Delete receipts that are not being kept
+    for (let i = 0; i < expenseClaim.otherReceipts.length; i++) {
+      if (!keptOtherIndices.includes(i)) {
         try {
-          await deleteFile(expenseClaim.otherReceipt);
+          await deleteFile(expenseClaim.otherReceipts[i]);
         } catch (error) {
-          console.error("Failed to delete other receipt:", error);
+          console.error(`Failed to delete other receipt ${i}:`, error);
         }
       }
-      otherReceiptPath = null;
+    }
+
+    // Upload new other files
+    for (const file of otherFiles) {
+      validateFile(file, 'Other receipt');
+      const buffer = Buffer.from(await file.arrayBuffer());
+      const path = await uploadFile(buffer, file.name);
+      otherReceiptPaths.push(path);
     }
 
     // Update the expense claim
@@ -215,9 +224,9 @@ export async function PUT(
         otherAmount: otherAmount ? parseFloat(otherAmount) : null,
         otherDescription: otherDescription || null,
         date: new Date(date),
-        accommodationReceipt: accommodationReceiptPath,
-        transportationReceipt: transportationReceiptPath,
-        otherReceipt: otherReceiptPath,
+        accommodationReceipts: accommodationReceiptPaths,
+        transportationReceipts: transportationReceiptPaths,
+        otherReceipts: otherReceiptPaths,
         status: "PENDING", // Reset to pending
         approverComment: null, // Clear the previous comment
       },

@@ -16,9 +16,11 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get the type parameter from the query string
+    // Get the type and index parameters from the query string
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type') || 'accommodation';
+    const indexParam = searchParams.get('index');
+    const index = indexParam ? parseInt(indexParam, 10) : 0;
 
     const expenseClaim = await prisma.expenseClaim.findUnique({
       where: { id: params.id },
@@ -34,25 +36,28 @@ export async function GET(
     // Check permission
     const userId = (session.user as any).id;
     const userRole = (session.user as any).role;
-    
+
     if (userRole !== "APPROVER" && expenseClaim.travelRequest?.userId !== userId) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Get the appropriate receipt path based on type
+    // Get the appropriate receipt path based on type and index
     let receiptPath: string | null = null;
-    
+    let receipts: string[] = [];
+
     if (type === 'accommodation') {
-      receiptPath = expenseClaim.accommodationReceipt;
+      receipts = expenseClaim.accommodationReceipts;
     } else if (type === 'transportation') {
-      receiptPath = expenseClaim.transportationReceipt;
+      receipts = expenseClaim.transportationReceipts;
     } else if (type === 'other') {
-      receiptPath = expenseClaim.otherReceipt;
+      receipts = expenseClaim.otherReceipts;
     }
 
-    if (!receiptPath) {
-      return NextResponse.json({ error: "No receipt found for this type" }, { status: 404 });
+    if (index < 0 || index >= receipts.length) {
+      return NextResponse.json({ error: "Receipt not found at the specified index" }, { status: 404 });
     }
+
+    receiptPath = receipts[index];
 
     const signedUrl = await downloadFile(receiptPath);
     

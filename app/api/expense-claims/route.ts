@@ -99,9 +99,9 @@ export async function POST(request: Request) {
     const otherAmount = formData.get("otherAmount") as string;
     const otherDescription = formData.get("otherDescription") as string;
     const date = formData.get("date") as string;
-    const accommodationFile = formData.get("accommodationReceipt") as File | null;
-    const transportationFile = formData.get("transportationReceipt") as File | null;
-    const otherFile = formData.get("otherReceipt") as File | null;
+    const accommodationFiles = formData.getAll("accommodationReceipts") as File[];
+    const transportationFiles = formData.getAll("transportationReceipts") as File[];
+    const otherFiles = formData.getAll("otherReceipts") as File[];
 
     if (!travelRequestId || !amount || !date) {
       return NextResponse.json(
@@ -140,16 +140,16 @@ export async function POST(request: Request) {
     const accommodationAmount = accommodation ? parseFloat(accommodation) : 0;
     const transportationAmount = transportation ? parseFloat(transportation) : 0;
 
-    if (accommodationAmount > 0 && !accommodationFile) {
+    if (accommodationAmount > 0 && accommodationFiles.length === 0) {
       return NextResponse.json(
-        { error: "Accommodation claims must include an uploaded receipt." },
+        { error: "Accommodation claims must include at least one uploaded receipt." },
         { status: 400 }
       );
     }
 
-    if (transportationAmount > 0 && !transportationFile) {
+    if (transportationAmount > 0 && transportationFiles.length === 0) {
       return NextResponse.json(
-        { error: "Transportation claims must include an uploaded receipt." },
+        { error: "Transportation claims must include at least one uploaded receipt." },
         { status: 400 }
       );
     }
@@ -174,27 +174,32 @@ export async function POST(request: Request) {
       }
     };
 
-    let accommodationReceiptPath: string | null = null;
-    let transportationReceiptPath: string | null = null;
-    let otherReceiptPath: string | null = null;
+    const accommodationReceiptPaths: string[] = [];
+    const transportationReceiptPaths: string[] = [];
+    const otherReceiptPaths: string[] = [];
 
-    // Upload files if provided
-    if (accommodationFile) {
-      validateFile(accommodationFile, 'Accommodation receipt');
-      const buffer = Buffer.from(await accommodationFile.arrayBuffer());
-      accommodationReceiptPath = await uploadFile(buffer, accommodationFile.name);
+    // Upload accommodation files
+    for (const file of accommodationFiles) {
+      validateFile(file, 'Accommodation receipt');
+      const buffer = Buffer.from(await file.arrayBuffer());
+      const path = await uploadFile(buffer, file.name);
+      accommodationReceiptPaths.push(path);
     }
-    
-    if (transportationFile) {
-      validateFile(transportationFile, 'Transportation receipt');
-      const buffer = Buffer.from(await transportationFile.arrayBuffer());
-      transportationReceiptPath = await uploadFile(buffer, transportationFile.name);
+
+    // Upload transportation files
+    for (const file of transportationFiles) {
+      validateFile(file, 'Transportation receipt');
+      const buffer = Buffer.from(await file.arrayBuffer());
+      const path = await uploadFile(buffer, file.name);
+      transportationReceiptPaths.push(path);
     }
-    
-    if (otherFile) {
-      validateFile(otherFile, 'Other receipt');
-      const buffer = Buffer.from(await otherFile.arrayBuffer());
-      otherReceiptPath = await uploadFile(buffer, otherFile.name);
+
+    // Upload other files
+    for (const file of otherFiles) {
+      validateFile(file, 'Other receipt');
+      const buffer = Buffer.from(await file.arrayBuffer());
+      const path = await uploadFile(buffer, file.name);
+      otherReceiptPaths.push(path);
     }
 
     const expenseClaim = await prisma.expenseClaim.create({
@@ -207,9 +212,9 @@ export async function POST(request: Request) {
         otherAmount: otherAmount ? parseFloat(otherAmount) : null,
         otherDescription: otherDescription || null,
         date: new Date(date),
-        accommodationReceipt: accommodationReceiptPath,
-        transportationReceipt: transportationReceiptPath,
-        otherReceipt: otherReceiptPath,
+        accommodationReceipts: accommodationReceiptPaths,
+        transportationReceipts: transportationReceiptPaths,
+        otherReceipts: otherReceiptPaths,
         status: "PENDING"
       }
     });

@@ -136,28 +136,28 @@ model TransportationItem {
 }
 
 model ExpenseClaim {
-  id                    String            @id @default(cuid())
-  travelRequestId       String
-  description           String
-  amount                Float
-  accommodation         Float?
-  transportation        Float?
-  otherAmount           Float?
-  otherDescription      String?
-  date                  DateTime
-  accommodationReceipt  String?
-  transportationReceipt String?
-  otherReceipt          String?
-  status                RequestStatus     @default(PENDING)
-  approverComment       String?
-  createdAt             DateTime          @default(now())
-  updatedAt             DateTime          @updatedAt
-  actualAmount          Float?
-  voucherNumber         String?           @unique
-  voucherGeneratedAt    DateTime?
-  voucherPdfPath        String?
-  expenseApprovals      ExpenseApproval[]
-  travelRequest         TravelRequest     @relation(fields: [travelRequestId], references: [id], onDelete: Cascade)
+  id                     String            @id @default(cuid())
+  travelRequestId        String
+  description            String
+  amount                 Float
+  accommodation          Float?
+  transportation         Float?
+  otherAmount            Float?
+  otherDescription       String?
+  date                   DateTime
+  accommodationReceipts  String[]          @default([])
+  transportationReceipts String[]          @default([])
+  otherReceipts          String[]          @default([])
+  status                 RequestStatus     @default(PENDING)
+  approverComment        String?
+  createdAt              DateTime          @default(now())
+  updatedAt              DateTime          @updatedAt
+  actualAmount           Float?
+  voucherNumber          String?           @unique
+  voucherGeneratedAt     DateTime?
+  voucherPdfPath         String?
+  expenseApprovals       ExpenseApproval[]
+  travelRequest          TravelRequest     @relation(fields: [travelRequestId], references: [id], onDelete: Cascade)
 
   @@index([travelRequestId])
   @@index([status])
