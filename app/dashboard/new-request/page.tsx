@@ -438,7 +438,7 @@ export default function NewRequestPage() {
             <div className="flex gap-4 pt-4">
               <Button type="submit" className="flex-1 gap-2" disabled={loading}>
                 <Send className="h-4 w-4" />
-                {loading ? "Submitting..." : "🚀 Test Submit Button"}
+                {loading ? "Submitting..." : "Submit Request"}
               </Button>
               <Link href="/dashboard" className="flex-1">
                 <Button type="button" variant="outline" className="w-full">
