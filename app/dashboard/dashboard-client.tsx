@@ -269,10 +269,10 @@ export default function DashboardClient() {
             </Card>
           </Link>
 
-          <Card 
+          <Card
             className={`transition-all cursor-pointer border-2 ${
-              requests.some(r => r.status === "APPROVED") 
-                ? "hover:shadow-lg border-transparent hover:border-green-500" 
+              requests.some(r => r.status === "APPROVED")
+                ? "hover:shadow-lg border-transparent hover:border-green-500"
                 : "opacity-60 cursor-not-allowed border-gray-200"
             }`}
             onClick={() => {
@@ -280,6 +280,14 @@ export default function DashboardClient() {
                 // Find the first approved request
                 const approvedRequest = requests.find(r => r.status === "APPROVED");
                 if (approvedRequest) {
+                  // Check if this request already has an active expense claim
+                  const hasActiveClaim = approvedRequest.expenseClaims?.some(
+                    (claim: any) => claim.status !== "DENIED"
+                  );
+                  if (hasActiveClaim) {
+                    toast.error("You already have an active expense claim for this travel request");
+                    return;
+                  }
                   window.location.href = `/dashboard/expenses/${approvedRequest.id}`;
                 }
               } else {

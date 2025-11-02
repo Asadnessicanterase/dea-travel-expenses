@@ -43,6 +43,7 @@ export default function SummaryClient() {
   const [loading, setLoading] = useState(true);
   const [hasApprovedRequest, setHasApprovedRequest] = useState(false);
   const [firstApprovedRequestId, setFirstApprovedRequestId] = useState<string | null>(null);
+  const [firstApprovedRequest, setFirstApprovedRequest] = useState<any>(null);
 
   useEffect(() => {
     fetchSummary();
@@ -69,6 +70,7 @@ export default function SummaryClient() {
       if (approvedRequest) {
         setHasApprovedRequest(true);
         setFirstApprovedRequestId(approvedRequest.id);
+        setFirstApprovedRequest(approvedRequest);
       }
     } catch (error) {
       // Silently fail - this is just for the action buttons
@@ -225,14 +227,22 @@ export default function SummaryClient() {
             </Card>
           </Link>
 
-          <Card 
+          <Card
             className={`transition-all cursor-pointer border-2 ${
               hasApprovedRequest
-                ? "hover:shadow-lg border-transparent hover:border-green-500" 
+                ? "hover:shadow-lg border-transparent hover:border-green-500"
                 : "opacity-60 cursor-not-allowed border-gray-200"
             }`}
             onClick={() => {
               if (hasApprovedRequest && firstApprovedRequestId) {
+                // Check if this request already has an active expense claim
+                const hasActiveClaim = firstApprovedRequest?.expenseClaims?.some(
+                  (claim: any) => claim.status !== "DENIED"
+                );
+                if (hasActiveClaim) {
+                  toast.error("You already have an active expense claim for this travel request");
+                  return;
+                }
                 window.location.href = `/dashboard/expenses/${firstApprovedRequestId}`;
               } else {
                 toast.error("You need an approved travel request before submitting expense claims");

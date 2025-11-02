@@ -138,6 +138,25 @@ export async function POST(request: Request) {
       );
     }
 
+    // Check if an expense claim already exists for this travel request
+    const existingClaim = await prisma.expenseClaim.findFirst({
+      where: {
+        travelRequestId,
+        status: {
+          notIn: ["DENIED"] // Allow new claim if previous was denied
+        }
+      }
+    });
+
+    if (existingClaim) {
+      return NextResponse.json(
+        {
+          error: "An expense claim already exists for this travel request. You can only modify it through resubmission if amendments are requested."
+        },
+        { status: 400 }
+      );
+    }
+
     const accommodationAmount = accommodation ? parseFloat(accommodation) : 0;
     const transportationAmount = transportation ? parseFloat(transportation) : 0;
 

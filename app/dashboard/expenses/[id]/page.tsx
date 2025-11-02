@@ -128,6 +128,11 @@ export default function ExpensesPage() {
     }
   };
 
+  // Check if user can create a new claim (no active claim exists)
+  const canCreateNewClaim = !request?.expenseClaims?.some(
+    (claim: any) => claim.status !== "DENIED"
+  );
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
@@ -489,7 +494,27 @@ export default function ExpensesPage() {
             <CardDescription>Upload receipts and document your expenses</CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            {!canCreateNewClaim ? (
+              <div className="py-8 text-center space-y-4">
+                <div className="flex justify-center">
+                  <div className="h-16 w-16 rounded-full bg-blue-100 flex items-center justify-center">
+                    <FileText className="h-8 w-8 text-blue-600" />
+                  </div>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-1">
+                    Expense Claim Already Exists
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    You already have an active expense claim for this travel request.
+                  </p>
+                  <p className="text-sm text-gray-600 mt-2">
+                    You can view it on the right, or wait for amendment requests from the approver.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="description">Description (Optional)</Label>
                 <Input
@@ -802,6 +827,7 @@ export default function ExpensesPage() {
                 {submitting ? "Signing and Sending..." : "Sign and Send Expense Claim"}
               </Button>
             </form>
+            )}
           </CardContent>
         </Card>
 
