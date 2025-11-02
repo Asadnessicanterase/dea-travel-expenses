@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db";
 import { uploadFile } from "@/lib/storage";
 import { formatDate } from "@/lib/date-utils";
 import { getApprovalFilter, getApproverEmail } from "@/lib/approvers";
+import { processCategoryReceipts } from "@/lib/receipt-merger";
 
 export const dynamic = "force-dynamic";
 
@@ -202,7 +203,8 @@ export async function POST(request: Request) {
       otherReceiptPaths.push(path);
     }
 
-    const expenseClaim = await prisma.expenseClaim.create({
+    // Create temporary expense claim to get ID for file naming
+    const tempExpenseClaim = await prisma.expenseClaim.create({
       data: {
         travelRequestId,
         description,
@@ -212,10 +214,37 @@ export async function POST(request: Request) {
         otherAmount: otherAmount ? parseFloat(otherAmount) : null,
         otherDescription: otherDescription || null,
         date: new Date(date),
-        accommodationReceipts: accommodationReceiptPaths,
-        transportationReceipts: transportationReceiptPaths,
-        otherReceipts: otherReceiptPaths,
+        accommodationReceipts: [],
+        transportationReceipts: [],
+        otherReceipts: [],
         status: "PENDING"
+      }
+    });
+
+    // Merge receipts per category if multiple files exist
+    const finalAccommodationReceipts = await processCategoryReceipts(
+      accommodationReceiptPaths,
+      'accommodation',
+      tempExpenseClaim.id
+    );
+    const finalTransportationReceipts = await processCategoryReceipts(
+      transportationReceiptPaths,
+      'transportation',
+      tempExpenseClaim.id
+    );
+    const finalOtherReceipts = await processCategoryReceipts(
+      otherReceiptPaths,
+      'other',
+      tempExpenseClaim.id
+    );
+
+    // Update expense claim with merged receipt paths
+    const expenseClaim = await prisma.expenseClaim.update({
+      where: { id: tempExpenseClaim.id },
+      data: {
+        accommodationReceipts: finalAccommodationReceipts,
+        transportationReceipts: finalTransportationReceipts,
+        otherReceipts: finalOtherReceipts,
       }
     });
 

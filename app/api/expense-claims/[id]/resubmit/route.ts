@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db";
 import { uploadFile, deleteFile } from "@/lib/storage";
 import { formatDate } from "@/lib/date-utils";
 import { getApproverEmail } from "@/lib/approvers";
+import { processCategoryReceipts } from "@/lib/receipt-merger";
 
 export const dynamic = "force-dynamic";
 
@@ -213,7 +214,24 @@ export async function PUT(
       otherReceiptPaths.push(path);
     }
 
-    // Update the expense claim
+    // Merge receipts per category if multiple files exist
+    const finalAccommodationReceipts = await processCategoryReceipts(
+      accommodationReceiptPaths,
+      'accommodation',
+      params.id
+    );
+    const finalTransportationReceipts = await processCategoryReceipts(
+      transportationReceiptPaths,
+      'transportation',
+      params.id
+    );
+    const finalOtherReceipts = await processCategoryReceipts(
+      otherReceiptPaths,
+      'other',
+      params.id
+    );
+
+    // Update the expense claim with merged receipt paths
     const updatedClaim = await prisma.expenseClaim.update({
       where: { id: params.id },
       data: {
@@ -224,9 +242,9 @@ export async function PUT(
         otherAmount: otherAmount ? parseFloat(otherAmount) : null,
         otherDescription: otherDescription || null,
         date: new Date(date),
-        accommodationReceipts: accommodationReceiptPaths,
-        transportationReceipts: transportationReceiptPaths,
-        otherReceipts: otherReceiptPaths,
+        accommodationReceipts: finalAccommodationReceipts,
+        transportationReceipts: finalTransportationReceipts,
+        otherReceipts: finalOtherReceipts,
         status: "PENDING", // Reset to pending
         approverComment: null, // Clear the previous comment
       },
