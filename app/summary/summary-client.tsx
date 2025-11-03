@@ -6,7 +6,7 @@ import { useSession } from "next-auth/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   FileText,
-  DollarSign,
+  ReceiptText,
   Clock,
   CheckCircle,
   XCircle,
@@ -183,7 +183,8 @@ export default function SummaryClient() {
       label: summary.isApprover ? "Requires Approval" : "Pending",
       icon: Clock,
       color: "text-yellow-600",
-      gradientTo: "to-yellow-50",
+      gradientFrom: "from-yellow-50",
+      gradientTo: "to-yellow-100",
       borderColor: "border-yellow-300/40",
       tooltip: summary.isApprover
         ? "Requests awaiting your approval"
@@ -194,7 +195,8 @@ export default function SummaryClient() {
       label: "Approved",
       icon: CheckCircle,
       color: "text-green-600",
-      gradientTo: "to-green-50",
+      gradientFrom: "from-green-50",
+      gradientTo: "to-green-100",
       borderColor: "border-green-300/40",
       tooltip: "Request approved and ready for travel",
     },
@@ -203,7 +205,8 @@ export default function SummaryClient() {
       label: "Denied",
       icon: XCircle,
       color: "text-red-600",
-      gradientTo: "to-red-50",
+      gradientFrom: "from-red-50",
+      gradientTo: "to-red-100",
       borderColor: "border-red-300/40",
       tooltip: "Request denied – review the feedback to adjust",
     },
@@ -212,7 +215,8 @@ export default function SummaryClient() {
       label: "Amendment Requested",
       icon: FileEdit,
       color: "text-orange-600",
-      gradientTo: "to-orange-50",
+      gradientFrom: "from-orange-50",
+      gradientTo: "to-orange-100",
       borderColor: "border-orange-300/40",
       tooltip: "Changes requested – update the details and resubmit",
     },
@@ -221,7 +225,8 @@ export default function SummaryClient() {
       label: "Closed",
       icon: Lock,
       color: "text-gray-600",
-      gradientTo: "to-gray-50",
+      gradientFrom: "from-gray-50",
+      gradientTo: "to-gray-100",
       borderColor: "border-gray-300/40",
       tooltip: "Closed trips cannot be edited",
     },
@@ -234,7 +239,8 @@ export default function SummaryClient() {
       label: summary.isApprover ? "Requires Approval" : "Pending",
       icon: Clock,
       color: "text-yellow-600",
-      gradientTo: "to-yellow-50",
+      gradientFrom: "from-yellow-50",
+      gradientTo: "to-yellow-100",
       borderColor: "border-yellow-300/40",
       tooltip: summary.isApprover
         ? "Claims awaiting your approval"
@@ -245,7 +251,8 @@ export default function SummaryClient() {
       label: "Approved for Payment",
       icon: CheckCircle,
       color: "text-green-600",
-      gradientTo: "to-green-50",
+      gradientFrom: "from-green-50",
+      gradientTo: "to-green-100",
       borderColor: "border-green-300/40",
       tooltip: "Approved and queued for reimbursement",
     },
@@ -254,7 +261,8 @@ export default function SummaryClient() {
       label: "Denied",
       icon: XCircle,
       color: "text-red-600",
-      gradientTo: "to-red-50",
+      gradientFrom: "from-red-50",
+      gradientTo: "to-red-100",
       borderColor: "border-red-300/40",
       tooltip: "Claim denied – check notes for details",
     },
@@ -263,7 +271,8 @@ export default function SummaryClient() {
       label: "Amendment Requested",
       icon: FileEdit,
       color: "text-orange-600",
-      gradientTo: "to-orange-50",
+      gradientFrom: "from-orange-50",
+      gradientTo: "to-orange-100",
       borderColor: "border-orange-300/40",
       tooltip: "More info required before approval",
     },
@@ -272,7 +281,8 @@ export default function SummaryClient() {
       label: "Closed",
       icon: Lock,
       color: "text-gray-600",
-      gradientTo: "to-gray-50",
+      gradientFrom: "from-gray-50",
+      gradientTo: "to-gray-100",
       borderColor: "border-gray-300/40",
       tooltip: "Closed claims are archived",
     },
@@ -306,7 +316,7 @@ export default function SummaryClient() {
       {!summary.isApprover && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
           <Link href="/dashboard/new-request">
-            <Card className="rounded-xl border border-blue-300/40 shadow-md transition-all transition-transform duration-150 hover:-translate-y-1 hover:shadow-[0_0_10px_rgba(0,0,0,0.05)] cursor-pointer bg-gradient-to-b from-white to-blue-50 hover:border-blue-400/60">
+            <Card className="rounded-xl border border-blue-300/40 shadow-md transition-all transition-transform duration-150 hover:-translate-y-1 hover:shadow-[0_0_10px_rgba(0,0,0,0.05)] cursor-pointer bg-gradient-to-b from-blue-50 to-blue-100 hover:border-blue-400/60">
               <CardHeader>
                 <div className="flex flex-wrap items-center gap-3 sm:flex-nowrap">
                   <div className="p-3 bg-blue-100 rounded-lg">
@@ -325,10 +335,10 @@ export default function SummaryClient() {
           </Link>
 
           <Card
-            className={`rounded-xl transition-all transition-transform duration-150 border shadow-md bg-gradient-to-b from-white ${
+            className={`rounded-xl transition-all transition-transform duration-150 border shadow-md bg-gradient-to-b ${
               hasApprovedRequest
-                ? "cursor-pointer hover:-translate-y-1 hover:shadow-[0_0_10px_rgba(0,0,0,0.05)] border-green-400/40 hover:border-green-500/60 to-green-50"
-                : "cursor-not-allowed border-gray-300/40 to-gray-50 opacity-60"
+                ? "cursor-pointer hover:-translate-y-1 hover:shadow-[0_0_10px_rgba(0,0,0,0.05)] border-green-400/40 hover:border-green-500/60 from-green-50 to-green-100"
+                : "cursor-not-allowed border-gray-300/40 from-gray-50 to-gray-100 opacity-60"
             }`}
             onClick={() => {
               if (hasApprovedRequest && firstApprovedRequestId) {
@@ -415,7 +425,7 @@ export default function SummaryClient() {
             return (
               <Link key={card.status} href={linkHref}>
                 <Card
-                  className={`rounded-xl border shadow-md transition-all transition-transform duration-150 hover:-translate-y-1 hover:shadow-[0_0_10px_rgba(0,0,0,0.05)] cursor-pointer bg-gradient-to-b from-white ${card.gradientTo} ${card.borderColor}`}
+                  className={`rounded-xl border shadow-md transition-all transition-transform duration-150 hover:-translate-y-1 hover:shadow-[0_0_10px_rgba(0,0,0,0.05)] cursor-pointer bg-gradient-to-b ${card.gradientFrom} ${card.gradientTo} ${card.borderColor}`}
                 >
                   <CardHeader className="px-4 pt-3 pb-1 space-y-1 sm:px-6 sm:pt-5 sm:pb-3 sm:space-y-1.5">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -458,7 +468,7 @@ export default function SummaryClient() {
       <div>
         <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4 mb-4">
           <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-            <DollarSign className="h-6 w-6 text-indigo-500" />
+            <ReceiptText className="h-6 w-6 text-indigo-500" />
             <h2 className="text-2xl font-bold text-gray-900">Expense Claims</h2>
             <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs font-medium">
               {totalExpenseClaims} total
@@ -497,7 +507,7 @@ export default function SummaryClient() {
             return (
               <Link key={card.status} href={linkHref}>
                 <Card
-                  className={`rounded-xl border shadow-md transition-all transition-transform duration-150 hover:-translate-y-1 hover:shadow-[0_0_10px_rgba(0,0,0,0.05)] cursor-pointer bg-gradient-to-b from-white ${card.gradientTo} ${card.borderColor}`}
+                  className={`rounded-xl border shadow-md transition-all transition-transform duration-150 hover:-translate-y-1 hover:shadow-[0_0_10px_rgba(0,0,0,0.05)] cursor-pointer bg-gradient-to-b ${card.gradientFrom} ${card.gradientTo} ${card.borderColor}`}
                 >
                   <CardHeader className="px-4 pt-3 pb-1 space-y-1 sm:px-6 sm:pt-5 sm:pb-3 sm:space-y-1.5">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

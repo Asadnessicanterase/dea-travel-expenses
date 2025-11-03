@@ -32,7 +32,7 @@ export default function RootLayout({
       <body className={poppins.className}>
         <Providers>
           <PageTransition />
-          <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+          <div className="min-h-screen bg-gradient-to-br from-blue-100 via-white to-indigo-100">
             <Header />
             <main>{children}</main>
           </div>
