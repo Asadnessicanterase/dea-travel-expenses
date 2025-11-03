@@ -70,7 +70,7 @@ export default function RequestDetailsPage() {
 
   if (loading) {
     return (
-      <div className="container mx-auto max-w-4xl px-4 py-8">
+      <div className="container mx-auto max-w-4xl px-4 py-8 overflow-x-hidden">
         <div className="flex items-center justify-center h-64">
           <div className="text-gray-500">Loading...</div>
         </div>
@@ -80,7 +80,7 @@ export default function RequestDetailsPage() {
 
   if (!request) {
     return (
-      <div className="container mx-auto max-w-4xl px-4 py-8">
+      <div className="container mx-auto max-w-4xl px-4 py-8 overflow-x-hidden">
         <div className="text-center">
           <p className="text-gray-500">Request not found</p>
           <Link href="/dashboard">
@@ -94,7 +94,7 @@ export default function RequestDetailsPage() {
   const totalExpenses = request.expenseClaims?.reduce((sum, claim) => sum + claim.amount, 0) || 0;
 
   return (
-    <div className="container mx-auto max-w-4xl px-4 py-8">
+    <div className="container mx-auto max-w-4xl px-4 py-8 overflow-x-hidden">
       <Link href="/dashboard">
         <Button variant="ghost" className="gap-2 mb-6">
           <ArrowLeft className="h-4 w-4" />
@@ -104,9 +104,9 @@ export default function RequestDetailsPage() {
 
       <Card className="mb-6">
         <CardHeader>
-          <div className="flex items-start justify-between">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2">
+              <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap sm:gap-3 mb-2">
                 <CardTitle className="text-2xl">{request.destinationCountry}</CardTitle>
                 <StatusBadge status={request.status} />
               </div>
@@ -114,7 +114,7 @@ export default function RequestDetailsPage() {
                 Submitted on {formatDate(request.submittedAt)}
               </div>
             </div>
-            <div className="text-right">
+            <div className="mt-2 w-full text-left sm:mt-0 sm:w-auto sm:text-right">
               <div className="text-3xl font-bold text-blue-600">
                 €{request.estimatedCosts?.toFixed(2) || '0.00'}
               </div>
@@ -125,7 +125,7 @@ export default function RequestDetailsPage() {
         <CardContent className="space-y-6">
           <div className="grid md:grid-cols-2 gap-6">
             <div>
-              <div className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+              <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap text-sm font-medium text-gray-700 mb-2">
                 <User className="h-4 w-4" />
                 Traveler Information
               </div>
@@ -136,7 +136,7 @@ export default function RequestDetailsPage() {
             </div>
 
             <div>
-              <div className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+              <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap text-sm font-medium text-gray-700 mb-2">
                 <Calendar className="h-4 w-4" />
                 Dates
               </div>
@@ -155,7 +155,7 @@ export default function RequestDetailsPage() {
           </div>
 
           <div className="border-t pt-6">
-            <div className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+            <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap text-sm font-medium text-gray-700 mb-2">
               <MapPin className="h-4 w-4" />
               Event Details
             </div>
@@ -170,7 +170,7 @@ export default function RequestDetailsPage() {
           </div>
 
           <div className="border-t pt-6">
-            <div className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+            <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap text-sm font-medium text-gray-700 mb-2">
               <FileText className="h-4 w-4" />
               Purpose
             </div>
@@ -188,13 +188,13 @@ export default function RequestDetailsPage() {
 
           {request.expenseClaims && request.expenseClaims.length > 0 && (
             <div className="border-t pt-6">
-              <div className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-4">
+              <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap text-sm font-medium text-gray-700 mb-4">
                 <Euro className="h-4 w-4" />
                 Expense Claims ({request.expenseClaims.length})
               </div>
               <div className="space-y-2">
                 {request.expenseClaims.map((claim) => (
-                  <div key={claim.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div key={claim.id} className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between p-3 bg-gray-50 rounded-lg">
                     <div>
                       <div className="font-medium text-sm">{claim.description}</div>
                       <div className="text-xs text-gray-600">
@@ -204,7 +204,7 @@ export default function RequestDetailsPage() {
                     <div className="font-bold text-sm">€{claim.amount?.toFixed(2) || '0.00'}</div>
                   </div>
                 ))}
-                <div className="flex items-center justify-between pt-2 border-t">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between pt-2 border-t">
                   <span className="font-semibold">Total Expenses</span>
                   <span className="text-lg font-bold text-purple-600">€{totalExpenses.toFixed(2)}</span>
                 </div>

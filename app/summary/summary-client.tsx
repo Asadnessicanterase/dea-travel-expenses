@@ -79,7 +79,7 @@ export default function SummaryClient() {
 
   if (loading) {
     return (
-      <div className="container mx-auto max-w-7xl px-4 py-8">
+      <div className="container mx-auto max-w-7xl px-4 py-8 overflow-x-hidden">
         <div className="flex items-center justify-center h-64">
           <div className="text-gray-500">Loading...</div>
         </div>
@@ -89,7 +89,7 @@ export default function SummaryClient() {
 
   if (!summary) {
     return (
-      <div className="container mx-auto max-w-7xl px-4 py-8">
+      <div className="container mx-auto max-w-7xl px-4 py-8 overflow-x-hidden">
         <div className="flex items-center justify-center h-64">
           <div className="text-red-500">Failed to load summary</div>
         </div>
@@ -196,7 +196,7 @@ export default function SummaryClient() {
   );
 
   return (
-    <div className="container mx-auto max-w-7xl px-4 py-8">
+    <div className="container mx-auto max-w-7xl px-4 py-8 overflow-x-hidden">
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900">
           {summary.isApprover ? "Approval Dashboard" : "My Dashboard"}
@@ -214,7 +214,7 @@ export default function SummaryClient() {
           <Link href="/dashboard/new-request">
             <Card className="hover:shadow-lg transition-all cursor-pointer border-2 border-transparent hover:border-blue-500">
               <CardHeader>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3 sm:flex-nowrap">
                   <div className="p-3 bg-blue-100 rounded-lg">
                     <FileText className="h-6 w-6 text-blue-600" />
                   </div>
@@ -250,7 +250,7 @@ export default function SummaryClient() {
             }}
           >
             <CardHeader>
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3 sm:flex-nowrap">
                 <div className={`p-3 rounded-lg ${
                   hasApprovedRequest ? "bg-green-100" : "bg-gray-100"
                 }`}>
@@ -274,8 +274,8 @@ export default function SummaryClient() {
 
       {/* Travel Requests Section */}
       <div className="mb-8">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
+          <div className="flex flex-wrap items-center gap-3 sm:flex-nowrap">
             <FileText className="h-6 w-6 text-blue-600" />
             <h2 className="text-2xl font-bold text-gray-900">Travel Requests</h2>
             <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
@@ -318,7 +318,7 @@ export default function SummaryClient() {
                   className={`hover:shadow-lg transition-all cursor-pointer border-2 ${card.borderColor} ${card.bgColor}`}
                 >
                   <CardHeader className="px-4 pt-3 pb-1 space-y-1 sm:px-6 sm:pt-5 sm:pb-3 sm:space-y-1.5">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <StatusIcon className={`h-4 w-4 sm:h-5 sm:w-5 ${card.color}`} />
                     </div>
                   </CardHeader>
@@ -339,8 +339,8 @@ export default function SummaryClient() {
 
       {/* Expense Claims Section */}
       <div>
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
+          <div className="flex flex-wrap items-center gap-3 sm:flex-nowrap">
             <DollarSign className="h-6 w-6 text-purple-600" />
             <h2 className="text-2xl font-bold text-gray-900">Expense Claims</h2>
             <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
@@ -383,7 +383,7 @@ export default function SummaryClient() {
                   className={`hover:shadow-lg transition-all cursor-pointer border-2 ${card.borderColor} ${card.bgColor}`}
                 >
                   <CardHeader className="px-4 pt-3 pb-1 space-y-1 sm:px-6 sm:pt-5 sm:pb-3 sm:space-y-1.5">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <StatusIcon className={`h-4 w-4 sm:h-5 sm:w-5 ${card.color}`} />
                     </div>
                   </CardHeader>

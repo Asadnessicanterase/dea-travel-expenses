@@ -467,7 +467,7 @@ export default function ApprovalsClient() {
   };
 
   return (
-    <div className="container mx-auto max-w-7xl px-4 py-8">
+    <div className="container mx-auto max-w-7xl px-4 py-8 overflow-x-hidden">
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900">Approvals Dashboard</h1>
         <p className="text-gray-600 mt-1">Review and approve travel requests and expense claims</p>
@@ -504,7 +504,7 @@ export default function ApprovalsClient() {
         <TabsContent value="requests" className="space-y-6">
           {/* Filter Controls */}
           <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-            <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap flex-shrink-0">
               <Filter className="h-5 w-5 text-gray-500" />
               <span className="text-sm font-medium text-gray-700">Filter by Status:</span>
             </div>
@@ -551,27 +551,27 @@ export default function ApprovalsClient() {
                     {pendingRequests.map((request) => (
                       <Card key={request.id} className="hover:shadow-lg transition-shadow border-l-4 border-l-yellow-500">
                         <CardHeader>
-                          <div className="flex items-start justify-between">
+                          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                             <div className="flex-1">
-                              <div className="flex items-center gap-3 mb-2">
+                              <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap sm:gap-3 mb-2">
                                 <CardTitle className="text-xl">{request.eventName}</CardTitle>
                                 <StatusBadge status={request.status} />
                               </div>
                               <CardDescription className="space-y-1">
-                                <div className="flex items-center gap-2">
+                                <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
                                   <User className="h-4 w-4" />
                                   <span>{request.name} - {request.position}</span>
                                 </div>
-                                <div className="flex items-center gap-2 text-gray-600">
+                                <div className="flex flex-wrap items-center gap-2 text-gray-600 sm:flex-nowrap">
                                   <span className="text-sm">Organizer: {request.eventOrganiser}</span>
                                 </div>
-                                <div className="flex items-center gap-2">
+                                <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
                                   <Calendar className="h-4 w-4" />
                                   <span>
                                     {formatDate(request.travelDateFrom)} - {formatDate(request.travelDateTo)}
                                   </span>
                                 </div>
-                                <div className="flex items-center gap-2">
+                                <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
                                   <MapPin className="h-4 w-4" />
                                   <span>
                                     {request.destinationCity ? `${request.destinationCity}, ` : ''}{request.destinationCountry}
@@ -579,7 +579,7 @@ export default function ApprovalsClient() {
                                 </div>
                               </CardDescription>
                             </div>
-                            <div className="text-right">
+                            <div className="mt-2 w-full text-left sm:mt-0 sm:w-auto sm:text-right">
                               <div className="text-2xl font-bold text-blue-600">
                                 €{request.estimatedCosts?.toFixed(2) || '0.00'}
                               </div>
@@ -597,7 +597,7 @@ export default function ApprovalsClient() {
                           <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                             <div className="text-sm font-semibold text-gray-900 mb-3">Cost Breakdown</div>
                             <div className="space-y-2">
-                              <div className="flex justify-between text-sm">
+                              <div className="flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:justify-between">
                                 <span className="text-gray-700">Accommodation:</span>
                                 <span className="font-medium text-gray-900">
                                   €{request.estimatedAccommodation?.toFixed(2) || '0.00'}
@@ -609,7 +609,7 @@ export default function ApprovalsClient() {
                                 <div className="border-t border-blue-200 pt-2 mt-2">
                                   <div className="text-xs font-semibold text-gray-700 mb-2">Transportation:</div>
                                   {request.transportationItems.map((item, index) => (
-                                    <div key={item.id || index} className="flex justify-between text-sm pl-3 mb-1">
+                                    <div key={item.id || index} className="flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:justify-between pl-3 mb-1">
                                       <span className="text-gray-600 text-xs">
                                         {item.description || `Transportation ${index + 1}`}:
                                       </span>
@@ -618,7 +618,7 @@ export default function ApprovalsClient() {
                                       </span>
                                     </div>
                                   ))}
-                                  <div className="flex justify-between text-sm font-medium border-t border-blue-200 pt-1 mt-1">
+                                  <div className="flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:justify-between font-medium border-t border-blue-200 pt-1 mt-1">
                                     <span className="text-gray-700">Total Transportation:</span>
                                     <span className="font-medium text-gray-900">
                                       €{(request.transportationItems.reduce((sum, item) => sum + (item.estimatedCost || 0), 0)).toFixed(2)}
@@ -627,7 +627,7 @@ export default function ApprovalsClient() {
                                 </div>
                               )}
                               
-                              <div className="flex justify-between text-sm">
+                              <div className="flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:justify-between">
                                 <span className="text-gray-700">
                                   Other{request.estimatedOtherDescription ? ` (${request.estimatedOtherDescription})` : ''}:
                                 </span>
@@ -635,7 +635,7 @@ export default function ApprovalsClient() {
                                   €{request.estimatedOther?.toFixed(2) || '0.00'}
                                 </span>
                               </div>
-                              <div className="flex justify-between text-sm pt-2 border-t border-blue-300">
+                              <div className="flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:justify-between pt-2 border-t border-blue-300">
                                 <span className="font-semibold text-gray-900">Total:</span>
                                 <span className="font-bold text-blue-600">
                                   €{request.estimatedCosts?.toFixed(2) || '0.00'}
@@ -644,10 +644,10 @@ export default function ApprovalsClient() {
                             </div>
                           </div>
 
-                          <div className="flex gap-2 pt-4 border-t">
+                          <div className="flex flex-col gap-2 pt-4 border-t sm:flex-row sm:flex-wrap">
                             <Button
                               size="sm"
-                              className="gap-2 flex-1 bg-green-600 hover:bg-green-700"
+                              className="w-full gap-2 bg-green-600 hover:bg-green-700 sm:w-auto"
                               onClick={() => openRequestActionDialog(request, "APPROVE")}
                             >
                               <CheckCircle className="h-4 w-4" />
@@ -656,7 +656,7 @@ export default function ApprovalsClient() {
                             <Button
                               size="sm"
                               variant="outline"
-                              className="gap-2 flex-1 border-orange-500 text-orange-700 hover:bg-orange-50"
+                              className="w-full gap-2 border-orange-500 text-orange-700 hover:bg-orange-50 sm:w-auto"
                               onClick={() => openRequestActionDialog(request, "REQUEST_AMENDMENT")}
                             >
                               <AlertCircle className="h-4 w-4" />
@@ -665,7 +665,7 @@ export default function ApprovalsClient() {
                             <Button
                               size="sm"
                               variant="outline"
-                              className="gap-2 flex-1 border-red-500 text-red-700 hover:bg-red-50"
+                              className="w-full gap-2 border-red-500 text-red-700 hover:bg-red-50 sm:w-auto"
                               onClick={() => openRequestActionDialog(request, "DENY")}
                             >
                               <XCircle className="h-4 w-4" />
@@ -705,7 +705,7 @@ export default function ApprovalsClient() {
                           onClick={() => toggleRequestExpanded(request.id)}
                         >
                           <CardContent className="py-4">
-                            <div className="flex items-center justify-between">
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                               <div className="flex-1">
                                 <div className="flex items-center gap-3 mb-1">
                                   <span className="font-semibold text-gray-900">{request.eventName}</span>
@@ -716,7 +716,7 @@ export default function ApprovalsClient() {
                                 </div>
                               </div>
                               <div className="flex items-center gap-3">
-                                <div className="text-right">
+                                <div className="mt-2 w-full text-left sm:mt-0 sm:w-auto sm:text-right">
                                   <div className="font-bold text-gray-900">€{request.estimatedCosts?.toFixed(2) || '0.00'}</div>
                                 </div>
                                 {isExpanded ? (
@@ -730,7 +730,7 @@ export default function ApprovalsClient() {
                             {/* Expanded Details */}
                             {isExpanded && (
                               <div className="mt-4 pt-4 border-t space-y-4" onClick={(e) => e.stopPropagation()}>
-                                <div className="grid grid-cols-2 gap-4 text-sm">
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 text-sm">
                                   <div>
                                     <div className="text-gray-600 mb-1">Employee</div>
                                     <div className="font-medium">{request.name} - {request.position}</div>
@@ -777,7 +777,7 @@ export default function ApprovalsClient() {
                                 <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                                   <div className="text-sm font-semibold text-gray-900 mb-3">Cost Breakdown</div>
                                   <div className="space-y-2">
-                                    <div className="flex justify-between text-sm">
+                                    <div className="flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:justify-between">
                                       <span className="text-gray-700">Accommodation:</span>
                                       <span className="font-medium text-gray-900">
                                         €{request.estimatedAccommodation?.toFixed(2) || '0.00'}
@@ -789,7 +789,7 @@ export default function ApprovalsClient() {
                                       <div className="border-t border-blue-200 pt-2 mt-2">
                                         <div className="text-xs font-semibold text-gray-700 mb-2">Transportation:</div>
                                         {request.transportationItems.map((item, index) => (
-                                          <div key={item.id || index} className="flex justify-between text-sm pl-3 mb-1">
+                                          <div key={item.id || index} className="flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:justify-between pl-3 mb-1">
                                             <span className="text-gray-600 text-xs">
                                               {item.description || `Transportation ${index + 1}`}:
                                             </span>
@@ -798,7 +798,7 @@ export default function ApprovalsClient() {
                                             </span>
                                           </div>
                                         ))}
-                                        <div className="flex justify-between text-sm font-medium border-t border-blue-200 pt-1 mt-1">
+                                        <div className="flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:justify-between font-medium border-t border-blue-200 pt-1 mt-1">
                                           <span className="text-gray-700">Total Transportation:</span>
                                           <span className="font-medium text-gray-900">
                                             €{(request.transportationItems.reduce((sum, item) => sum + (item.estimatedCost || 0), 0)).toFixed(2)}
@@ -807,7 +807,7 @@ export default function ApprovalsClient() {
                                       </div>
                                     )}
                                     
-                                    <div className="flex justify-between text-sm">
+                                    <div className="flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:justify-between">
                                       <span className="text-gray-700">
                                         Other{request.estimatedOtherDescription ? ` (${request.estimatedOtherDescription})` : ''}:
                                       </span>
@@ -815,7 +815,7 @@ export default function ApprovalsClient() {
                                         €{request.estimatedOther?.toFixed(2) || '0.00'}
                                       </span>
                                     </div>
-                                    <div className="flex justify-between text-sm pt-2 border-t border-blue-300">
+                                    <div className="flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:justify-between pt-2 border-t border-blue-300">
                                       <span className="font-semibold text-gray-900">Total:</span>
                                       <span className="font-bold text-blue-600">
                                         €{request.estimatedCosts?.toFixed(2) || '0.00'}
@@ -840,7 +840,7 @@ export default function ApprovalsClient() {
         <TabsContent value="expenses" className="space-y-6">
           {/* Filter Controls */}
           <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-            <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap flex-shrink-0">
               <Filter className="h-5 w-5 text-gray-500" />
               <span className="text-sm font-medium text-gray-700">Filter by Status:</span>
             </div>
@@ -886,28 +886,28 @@ export default function ApprovalsClient() {
                     {pendingClaims.map((claim) => (
                       <Card key={claim.id} className="hover:shadow-lg transition-shadow border-l-4 border-l-yellow-500">
                         <CardHeader>
-                          <div className="flex items-start justify-between">
+                          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                             <div className="flex-1">
-                              <div className="flex items-center gap-3 mb-2">
+                              <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap sm:gap-3 mb-2">
                                 <CardTitle className="text-xl">{claim.travelRequest.eventName}</CardTitle>
                                 <StatusBadge status={claim.status} />
                               </div>
                               <CardDescription className="space-y-1">
-                                <div className="flex items-center gap-2">
+                                <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
                                   <User className="h-4 w-4" />
                                   <span>{claim.travelRequest.user.name} - {claim.travelRequest.user.email}</span>
                                 </div>
-                                <div className="flex items-center gap-2">
+                                <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
                                   <MapPin className="h-4 w-4" />
                                   <span>Travel: {claim.travelRequest.destinationCountry}</span>
                                 </div>
-                                <div className="flex items-center gap-2">
+                                <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
                                   <Calendar className="h-4 w-4" />
                                   <span>Claim Submission Date: {formatDate(claim.date)}</span>
                                 </div>
                               </CardDescription>
                             </div>
-                            <div className="text-right">
+                            <div className="mt-2 w-full text-left sm:mt-0 sm:w-auto sm:text-right">
                               <div className="text-2xl font-bold text-green-600">
                                 €{claim.amount?.toFixed(2) || '0.00'}
                               </div>
@@ -927,7 +927,7 @@ export default function ApprovalsClient() {
                             return (
                               <div className={`p-4 rounded-lg border ${isOverBudget ? 'bg-red-50 border-red-200' : 'bg-blue-50 border-blue-200'}`}>
                                 <div className="text-sm font-semibold text-gray-900 mb-3">Budget Comparison</div>
-                                <div className="grid grid-cols-3 gap-4">
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                                   <div className="text-center">
                                     <div className="text-xs text-gray-600 mb-1">Original Estimated</div>
                                     <div className="text-lg font-bold text-gray-900">
@@ -959,8 +959,8 @@ export default function ApprovalsClient() {
                             <div className="text-sm font-semibold text-gray-900 mb-3">Cost Breakdown</div>
                             <div className="space-y-2">
                               {claim.accommodation !== null && claim.accommodation !== undefined && claim.accommodation > 0 && (
-                                <div className="flex justify-between text-sm">
-                                  <div className="flex items-center gap-2 flex-wrap">
+                                <div className="flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:justify-between">
+                                  <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap flex-wrap">
                                     <span className="text-gray-700">Accommodation:</span>
                                     {claim.accommodationReceipts && claim.accommodationReceipts.length > 0 && (
                                       <div className="flex items-center gap-1 flex-wrap">
@@ -994,8 +994,8 @@ export default function ApprovalsClient() {
                                 </div>
                               )}
                               {claim.transportation !== null && claim.transportation !== undefined && claim.transportation > 0 && (
-                                <div className="flex justify-between text-sm">
-                                  <div className="flex items-center gap-2 flex-wrap">
+                                <div className="flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:justify-between">
+                                  <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap flex-wrap">
                                     <span className="text-gray-700">Transportation:</span>
                                     {claim.transportationReceipts && claim.transportationReceipts.length > 0 && (
                                       <div className="flex items-center gap-1 flex-wrap">
@@ -1029,8 +1029,8 @@ export default function ApprovalsClient() {
                                 </div>
                               )}
                               {claim.otherAmount !== null && claim.otherAmount !== undefined && claim.otherAmount > 0 && (
-                                <div className="flex justify-between text-sm">
-                                  <div className="flex items-center gap-2 flex-wrap">
+                                <div className="flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:justify-between">
+                                  <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap flex-wrap">
                                     <span className="text-gray-700">
                                       Other{claim.otherDescription ? ` (${claim.otherDescription})` : ''}:
                                     </span>
@@ -1065,7 +1065,7 @@ export default function ApprovalsClient() {
                                   </span>
                                 </div>
                               )}
-                              <div className="flex justify-between text-sm pt-2 border-t border-green-300">
+                              <div className="flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:justify-between pt-2 border-t border-green-300">
                                 <span className="font-semibold text-gray-900">Total:</span>
                                 <span className="font-bold text-green-600">
                                   €{claim.amount?.toFixed(2) || '0.00'}
@@ -1075,10 +1075,10 @@ export default function ApprovalsClient() {
                           </div>
 
                           <div className="flex flex-col gap-2 pt-4 border-t">
-                            <div className="flex gap-2">
+                            <div className="flex flex-col gap-2 sm:flex-row">
                               <Button
                                 size="sm"
-                                className="gap-2 flex-1 bg-green-600 hover:bg-green-700"
+                                className="w-full gap-2 bg-green-600 hover:bg-green-700 sm:w-auto"
                                 onClick={() => openClaimActionDialog(claim, "APPROVE")}
                               >
                                 <CheckCircle className="h-4 w-4" />
@@ -1087,7 +1087,7 @@ export default function ApprovalsClient() {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                className="gap-2 flex-1 border-red-500 text-red-700 hover:bg-red-50"
+                                className="w-full gap-2 border-red-500 text-red-700 hover:bg-red-50 sm:w-auto"
                                 onClick={() => openClaimActionDialog(claim, "DENY")}
                               >
                                 <XCircle className="h-4 w-4" />
@@ -1097,7 +1097,7 @@ export default function ApprovalsClient() {
                             <Button
                               size="sm"
                               variant="outline"
-                              className="gap-2 w-full border-amber-500 text-amber-700 hover:bg-amber-50"
+                              className="w-full gap-2 border-amber-500 text-amber-700 hover:bg-amber-50 sm:w-auto"
                               onClick={() => openClaimActionDialog(claim, "REQUEST_AMENDMENT")}
                             >
                               <AlertCircle className="h-4 w-4" />
@@ -1137,28 +1137,28 @@ export default function ApprovalsClient() {
                       return (
                         <Card key={claim.id} className="hover:shadow-md transition-shadow border-l-4 border-l-amber-500">
                           <CardHeader>
-                            <div className="flex items-start justify-between">
+                            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                               <div className="flex-1">
-                                <div className="flex items-center gap-3 mb-2">
+                                <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap sm:gap-3 mb-2">
                                   <CardTitle className="text-xl">{claim.travelRequest.eventName}</CardTitle>
                                   <StatusBadge status={claim.status} />
                                 </div>
                                 <CardDescription className="space-y-1">
-                                  <div className="flex items-center gap-2">
+                                  <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
                                     <User className="h-4 w-4" />
                                     <span>{claim.travelRequest.user.name} - {claim.travelRequest.user.email}</span>
                                   </div>
-                                  <div className="flex items-center gap-2">
+                                  <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
                                     <MapPin className="h-4 w-4" />
                                     <span>Travel: {claim.travelRequest.destinationCountry}</span>
                                   </div>
-                                  <div className="flex items-center gap-2">
+                                  <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
                                     <Calendar className="h-4 w-4" />
                                     <span>Claim Submission Date: {formatDate(claim.date)}</span>
                                   </div>
                                 </CardDescription>
                               </div>
-                              <div className="text-right">
+                              <div className="mt-2 w-full text-left sm:mt-0 sm:w-auto sm:text-right">
                                 <div className="text-2xl font-bold text-amber-600">
                                   €{claim.amount?.toFixed(2) || '0.00'}
                                 </div>
@@ -1180,7 +1180,7 @@ export default function ApprovalsClient() {
                             {/* Budget Comparison */}
                             <div className={`p-4 rounded-lg border ${isOverBudget ? 'bg-red-50 border-red-200' : 'bg-blue-50 border-blue-200'}`}>
                               <div className="text-sm font-semibold text-gray-900 mb-3">Budget Comparison</div>
-                              <div className="grid grid-cols-3 gap-4">
+                              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                                 <div className="text-center">
                                   <div className="text-xs text-gray-600 mb-1">Original Estimated</div>
                                   <div className="text-lg font-bold text-gray-900">
@@ -1210,8 +1210,8 @@ export default function ApprovalsClient() {
                               <div className="text-sm font-semibold text-gray-900 mb-3">Cost Breakdown</div>
                               <div className="space-y-2">
                                 {claim.accommodation !== null && claim.accommodation !== undefined && claim.accommodation > 0 && (
-                                  <div className="flex justify-between text-sm">
-                                    <div className="flex items-center gap-2 flex-wrap">
+                                  <div className="flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:justify-between">
+                                    <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap flex-wrap">
                                       <span className="text-gray-700">Accommodation:</span>
                                       {claim.accommodationReceipts && claim.accommodationReceipts.length > 0 && (
                                         <div className="flex items-center gap-1 flex-wrap">
@@ -1245,8 +1245,8 @@ export default function ApprovalsClient() {
                                   </div>
                                 )}
                                 {claim.transportation !== null && claim.transportation !== undefined && claim.transportation > 0 && (
-                                  <div className="flex justify-between text-sm">
-                                    <div className="flex items-center gap-2 flex-wrap">
+                                  <div className="flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:justify-between">
+                                    <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap flex-wrap">
                                       <span className="text-gray-700">Transportation:</span>
                                       {claim.transportationReceipts && claim.transportationReceipts.length > 0 && (
                                         <div className="flex items-center gap-1 flex-wrap">
@@ -1280,8 +1280,8 @@ export default function ApprovalsClient() {
                                   </div>
                                 )}
                                 {claim.otherAmount !== null && claim.otherAmount !== undefined && claim.otherAmount > 0 && (
-                                  <div className="flex justify-between text-sm">
-                                    <div className="flex items-center gap-2 flex-wrap">
+                                  <div className="flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:justify-between">
+                                    <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap flex-wrap">
                                       <span className="text-gray-700">
                                         Other{claim.otherDescription ? ` (${claim.otherDescription})` : ''}:
                                       </span>
@@ -1316,7 +1316,7 @@ export default function ApprovalsClient() {
                                     </span>
                                   </div>
                                 )}
-                                <div className="flex justify-between text-sm pt-2 border-t border-green-300">
+                                <div className="flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:justify-between pt-2 border-t border-green-300">
                                   <span className="font-semibold text-gray-900">Total:</span>
                                   <span className="font-bold text-green-600">
                                     €{claim.amount?.toFixed(2) || '0.00'}
@@ -1364,7 +1364,7 @@ export default function ApprovalsClient() {
                           onClick={() => toggleClaimExpanded(claim.id)}
                         >
                           <CardContent className="py-4">
-                            <div className="flex items-center justify-between">
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                               <div className="flex-1">
                                 <div className="flex items-center gap-3 mb-1">
                                   <span className="font-semibold text-gray-900">{claim.travelRequest.eventName}</span>
@@ -1375,7 +1375,7 @@ export default function ApprovalsClient() {
                                 </div>
                               </div>
                               <div className="flex items-center gap-3">
-                                <div className="text-right">
+                                <div className="mt-2 w-full text-left sm:mt-0 sm:w-auto sm:text-right">
                                   <div className="font-bold text-gray-900">€{claim.amount?.toFixed(2) || '0.00'}</div>
                                 </div>
                                 {isExpanded ? (
@@ -1389,7 +1389,7 @@ export default function ApprovalsClient() {
                             {/* Expanded Details */}
                             {isExpanded && (
                               <div className="mt-4 pt-4 border-t space-y-4" onClick={(e) => e.stopPropagation()}>
-                                <div className="grid grid-cols-2 gap-4 text-sm">
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 text-sm">
                                   <div>
                                     <div className="text-gray-600 mb-1">Employee</div>
                                     <div className="font-medium">
@@ -1430,8 +1430,8 @@ export default function ApprovalsClient() {
                                   <div className="text-sm font-semibold text-gray-900 mb-3">Cost Breakdown</div>
                                   <div className="space-y-2">
                                     {claim.accommodation !== null && claim.accommodation !== undefined && claim.accommodation > 0 && (
-                                      <div className="flex justify-between text-sm">
-                                        <div className="flex items-center gap-2 flex-wrap">
+                                      <div className="flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:justify-between">
+                                        <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap flex-wrap">
                                           <span className="text-gray-700">Accommodation:</span>
                                           {claim.accommodationReceipts && claim.accommodationReceipts.length > 0 && (
                                             <div className="flex items-center gap-1 flex-wrap">
@@ -1471,8 +1471,8 @@ export default function ApprovalsClient() {
                                       </div>
                                     )}
                                     {claim.transportation !== null && claim.transportation !== undefined && claim.transportation > 0 && (
-                                      <div className="flex justify-between text-sm">
-                                        <div className="flex items-center gap-2 flex-wrap">
+                                      <div className="flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:justify-between">
+                                        <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap flex-wrap">
                                           <span className="text-gray-700">Transportation:</span>
                                           {claim.transportationReceipts && claim.transportationReceipts.length > 0 && (
                                             <div className="flex items-center gap-1 flex-wrap">
@@ -1512,8 +1512,8 @@ export default function ApprovalsClient() {
                                       </div>
                                     )}
                                     {claim.otherAmount !== null && claim.otherAmount !== undefined && claim.otherAmount > 0 && (
-                                      <div className="flex justify-between text-sm">
-                                        <div className="flex items-center gap-2 flex-wrap">
+                                      <div className="flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:justify-between">
+                                        <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap flex-wrap">
                                           <span className="text-gray-700">
                                             Other{claim.otherDescription ? ` (${claim.otherDescription})` : ''}:
                                           </span>
@@ -1554,7 +1554,7 @@ export default function ApprovalsClient() {
                                         </span>
                                       </div>
                                     )}
-                                    <div className="flex justify-between text-sm pt-2 border-t border-green-300">
+                                    <div className="flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:justify-between pt-2 border-t border-green-300">
                                       <span className="font-semibold text-gray-900">Total:</span>
                                       <span className="font-bold text-green-600">
                                         €{claim.amount?.toFixed(2) || '0.00'}
@@ -1566,8 +1566,8 @@ export default function ApprovalsClient() {
                                 {/* Payment Voucher Section - For APPROVED and CLOSED Claims */}
                                 {(claim.status === "APPROVED" || claim.status === "CLOSED") && (
                                   <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                                    <div className="flex items-center justify-between">
-                                      <div className="flex items-center gap-2">
+                                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                      <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
                                         <FileText className="h-5 w-5 text-blue-600" />
                                         <div>
                                           <div className="text-sm font-semibold text-gray-900">Payment Voucher</div>
@@ -1576,7 +1576,7 @@ export default function ApprovalsClient() {
                                           )}
                                         </div>
                                       </div>
-                                      <div className="flex gap-2">
+                                      <div className="flex flex-col gap-2 sm:flex-row">
                                         {checkVoucherStatus(claim) ? (
                                           <Button
                                             size="sm"
@@ -1584,7 +1584,7 @@ export default function ApprovalsClient() {
                                               e.stopPropagation();
                                               handleDownloadVoucher(claim.id);
                                             }}
-                                            className="bg-blue-600 hover:bg-blue-700"
+                                            className="w-full bg-blue-600 hover:bg-blue-700 sm:w-auto"
                                           >
                                             <Download className="h-4 w-4 mr-1" />
                                             Download Voucher
@@ -1645,7 +1645,7 @@ export default function ApprovalsClient() {
               />
             </div>
 
-            <div className="flex gap-2 pt-4">
+            <div className="flex flex-col gap-2 pt-4 sm:flex-row sm:flex-wrap">
               <Button
                 className="flex-1"
                 onClick={handleRequestAction}
@@ -1701,7 +1701,7 @@ export default function ApprovalsClient() {
               />
             </div>
 
-            <div className="flex gap-2 pt-4">
+            <div className="flex flex-col gap-2 pt-4 sm:flex-row sm:flex-wrap">
               <Button
                 className="flex-1"
                 onClick={handleClaimAction}
@@ -1744,7 +1744,7 @@ export default function ApprovalsClient() {
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader className="flex flex-row items-center justify-between">
             <DialogTitle className="capitalize">{previewType} Receipt</DialogTitle>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
               {!previewLoading && previewUrl && (
                 <Button
                   size="sm"

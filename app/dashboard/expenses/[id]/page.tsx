@@ -418,7 +418,7 @@ export default function ExpensesPage() {
 
   if (loading) {
     return (
-      <div className="container mx-auto max-w-5xl px-4 py-8">
+      <div className="container mx-auto max-w-5xl px-4 py-8 overflow-x-hidden">
         <div className="flex items-center justify-center h-64">
           <div className="text-gray-500">Loading...</div>
         </div>
@@ -428,7 +428,7 @@ export default function ExpensesPage() {
 
   if (!request) {
     return (
-      <div className="container mx-auto max-w-5xl px-4 py-8">
+      <div className="container mx-auto max-w-5xl px-4 py-8 overflow-x-hidden">
         <div className="text-center">
           <p className="text-gray-500">Request not found</p>
           <Link href="/dashboard">
@@ -440,7 +440,7 @@ export default function ExpensesPage() {
   }
 
   return (
-    <div className="container mx-auto max-w-5xl px-4 py-8">
+    <div className="container mx-auto max-w-5xl px-4 py-8 overflow-x-hidden">
       <Link href="/dashboard">
         <Button variant="ghost" className="gap-2 mb-6">
           <ArrowLeft className="h-4 w-4" />
@@ -450,7 +450,7 @@ export default function ExpensesPage() {
 
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900">{request.eventName}</h1>
-        <div className="flex items-center gap-2 text-gray-600 mt-2">
+        <div className="flex flex-wrap items-center gap-2 text-gray-600 mt-2">
           <MapPin className="h-4 w-4" />
           <span>{request.destinationCity}, {request.destinationCountry}</span>
         </div>
@@ -500,7 +500,7 @@ export default function ExpensesPage() {
         {/* Add New Claim Form */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex flex-wrap items-center gap-2">
               <Plus className="h-5 w-5" />
               Add New Expense Claim
             </CardTitle>
@@ -558,13 +558,13 @@ export default function ExpensesPage() {
                     <Label className="text-sm text-gray-600">
                       Accommodation Receipt (PDF or Image)
                     </Label>
-                    <div className="flex gap-2 mt-1">
+                    <div className="flex flex-col gap-2 mt-1 sm:flex-row">
                       <Button
                         type="button"
                         variant="outline"
                         size="sm"
                         onClick={() => handleTakePhoto('accommodation')}
-                        className="flex-1 gap-2"
+                        className="w-full gap-2 sm:w-auto"
                         disabled={submitting}
                       >
                         <Camera className="h-4 w-4" />
@@ -575,7 +575,7 @@ export default function ExpensesPage() {
                         variant="outline"
                         size="sm"
                         onClick={() => accommodationInputRef.current?.click()}
-                        className="flex-1 gap-2"
+                        className="w-full gap-2 sm:w-auto"
                         disabled={submitting}
                       >
                         <FolderOpen className="h-4 w-4" />
@@ -599,7 +599,7 @@ export default function ExpensesPage() {
                       <div className="mt-2 space-y-2">
                         {accommodationFiles.map((file, index) => (
                           <div key={index} className="space-y-2">
-                            <div className="flex items-center justify-between p-2 bg-green-50 border border-green-200 rounded">
+                            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between p-2 bg-green-50 border border-green-200 rounded">
                               <p className="text-xs text-green-800 truncate flex-1">
                                 {file.name}
                               </p>
@@ -608,7 +608,7 @@ export default function ExpensesPage() {
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleRemoveFile('accommodation', index)}
-                                className="h-6 w-6 p-0 ml-2"
+                                className="h-6 w-6 p-0 sm:ml-2"
                               >
                                 <X className="h-4 w-4" />
                               </Button>
@@ -652,13 +652,13 @@ export default function ExpensesPage() {
                     <Label className="text-sm text-gray-600">
                       Transportation Receipt (PDF or Image)
                     </Label>
-                    <div className="flex gap-2 mt-1">
+                    <div className="flex flex-col gap-2 mt-1 sm:flex-row">
                       <Button
                         type="button"
                         variant="outline"
                         size="sm"
                         onClick={() => handleTakePhoto('transportation')}
-                        className="flex-1 gap-2"
+                        className="w-full gap-2 sm:w-auto"
                         disabled={submitting}
                       >
                         <Camera className="h-4 w-4" />
@@ -669,7 +669,7 @@ export default function ExpensesPage() {
                         variant="outline"
                         size="sm"
                         onClick={() => transportationInputRef.current?.click()}
-                        className="flex-1 gap-2"
+                        className="w-full gap-2 sm:w-auto"
                         disabled={submitting}
                       >
                         <FolderOpen className="h-4 w-4" />
@@ -693,7 +693,7 @@ export default function ExpensesPage() {
                       <div className="mt-2 space-y-2">
                         {transportationFiles.map((file, index) => (
                           <div key={index} className="space-y-2">
-                            <div className="flex items-center justify-between p-2 bg-green-50 border border-green-200 rounded">
+                            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between p-2 bg-green-50 border border-green-200 rounded">
                               <p className="text-xs text-green-800 truncate flex-1">
                                 {file.name}
                               </p>
@@ -702,7 +702,7 @@ export default function ExpensesPage() {
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleRemoveFile('transportation', index)}
-                                className="h-6 w-6 p-0 ml-2"
+                                className="h-6 w-6 p-0 sm:ml-2"
                               >
                                 <X className="h-4 w-4" />
                               </Button>
@@ -758,13 +758,13 @@ export default function ExpensesPage() {
                     <Label className="text-sm text-gray-600">
                       Other Expenses Receipt (PDF or Image)
                     </Label>
-                    <div className="flex gap-2 mt-1">
+                    <div className="flex flex-col gap-2 mt-1 sm:flex-row">
                       <Button
                         type="button"
                         variant="outline"
                         size="sm"
                         onClick={() => handleTakePhoto('other')}
-                        className="flex-1 gap-2"
+                        className="w-full gap-2 sm:w-auto"
                         disabled={submitting}
                       >
                         <Camera className="h-4 w-4" />
@@ -775,7 +775,7 @@ export default function ExpensesPage() {
                         variant="outline"
                         size="sm"
                         onClick={() => otherInputRef.current?.click()}
-                        className="flex-1 gap-2"
+                        className="w-full gap-2 sm:w-auto"
                         disabled={submitting}
                       >
                         <FolderOpen className="h-4 w-4" />
@@ -799,7 +799,7 @@ export default function ExpensesPage() {
                       <div className="mt-2 space-y-2">
                         {otherFiles.map((file, index) => (
                           <div key={index} className="space-y-2">
-                            <div className="flex items-center justify-between p-2 bg-green-50 border border-green-200 rounded">
+                            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between p-2 bg-green-50 border border-green-200 rounded">
                               <p className="text-xs text-green-800 truncate flex-1">
                                 {file.name}
                               </p>
@@ -808,7 +808,7 @@ export default function ExpensesPage() {
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleRemoveFile('other', index)}
-                                className="h-6 w-6 p-0 ml-2"
+                                className="h-6 w-6 p-0 sm:ml-2"
                               >
                                 <X className="h-4 w-4" />
                               </Button>
@@ -867,14 +867,14 @@ export default function ExpensesPage() {
                     key={claim.id}
                     className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
                   >
-                    <div className="flex items-start justify-between mb-2">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-2">
                       <div className="flex-1">
                         <h4 className="font-semibold text-gray-900">{claim.description}</h4>
                         <p className="text-sm text-gray-600">
                           {formatDate(claim.date)}
                         </p>
                       </div>
-                      <div className="text-right">
+                      <div className="mt-2 w-full text-left sm:mt-0 sm:w-auto sm:text-right">
                         <div className="text-lg font-bold text-gray-900">
                           €{claim.amount?.toFixed(2) || '0.00'}
                         </div>
@@ -885,19 +885,19 @@ export default function ExpensesPage() {
                     {(claim.accommodation || claim.transportation || claim.otherAmount) && (
                       <div className="mt-3 pt-3 border-t text-sm space-y-1">
                         {claim.accommodation && claim.accommodation > 0 && (
-                          <div className="flex justify-between text-gray-600">
+                          <div className="flex flex-col gap-1 text-gray-600 sm:flex-row sm:items-center sm:justify-between">
                             <span>Accommodation:</span>
                             <span className="font-medium">€{claim.accommodation.toFixed(2)}</span>
                           </div>
                         )}
                         {claim.transportation && claim.transportation > 0 && (
-                          <div className="flex justify-between text-gray-600">
+                          <div className="flex flex-col gap-1 text-gray-600 sm:flex-row sm:items-center sm:justify-between">
                             <span>Transportation:</span>
                             <span className="font-medium">€{claim.transportation.toFixed(2)}</span>
                           </div>
                         )}
                         {claim.otherAmount && claim.otherAmount > 0 && (
-                          <div className="flex justify-between text-gray-600">
+                          <div className="flex flex-col gap-1 text-gray-600 sm:flex-row sm:items-center sm:justify-between">
                             <span>Other{claim.otherDescription ? ` (${claim.otherDescription})` : ''}:</span>
                             <span className="font-medium">€{claim.otherAmount.toFixed(2)}</span>
                           </div>

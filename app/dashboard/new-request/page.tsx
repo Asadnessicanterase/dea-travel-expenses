@@ -148,7 +148,7 @@ export default function NewRequestPage() {
   };
 
   return (
-    <div className="container mx-auto max-w-3xl px-4 py-8">
+    <div className="container mx-auto max-w-3xl px-4 py-8 overflow-x-hidden">
       <Link href="/dashboard">
         <Button variant="ghost" className="gap-2 mb-6">
           <ArrowLeft className="h-4 w-4" />
@@ -335,14 +335,14 @@ export default function NewRequestPage() {
               </div>
 
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <Label className="text-base">Transportation</Label>
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
                     onClick={addTransportationItem}
-                    className="gap-2"
+                    className="w-full gap-2 sm:w-auto"
                   >
                     <span className="text-lg">+</span> Add Transportation
                   </Button>
@@ -350,7 +350,7 @@ export default function NewRequestPage() {
                 
                 {transportationItems.map((item, index) => (
                   <div key={index} className="p-4 border rounded-lg space-y-3 bg-gray-50">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <Label className="text-sm font-medium">Transportation Item {index + 1}</Label>
                       {transportationItems.length > 1 && (
                         <Button
@@ -358,7 +358,7 @@ export default function NewRequestPage() {
                           variant="ghost"
                           size="sm"
                           onClick={() => removeTransportationItem(index)}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          className="w-full text-red-600 hover:text-red-700 hover:bg-red-50 sm:w-auto"
                         >
                           Remove
                         </Button>
@@ -435,13 +435,13 @@ export default function NewRequestPage() {
               </div>
             </div>
 
-            <div className="flex gap-4 pt-4">
-              <Button type="submit" className="flex-1 gap-2" disabled={loading}>
+            <div className="flex flex-col gap-3 pt-4 sm:flex-row sm:gap-4">
+              <Button type="submit" className="w-full gap-2 sm:w-auto" disabled={loading}>
                 <Send className="h-4 w-4" />
                 {loading ? "Submitting..." : "Submit Request"}
               </Button>
-              <Link href="/dashboard" className="flex-1">
-                <Button type="button" variant="outline" className="w-full">
+              <Link href="/dashboard" className="w-full sm:w-auto">
+                <Button type="button" variant="outline" className="w-full sm:w-auto">
                   Cancel
                 </Button>
               </Link>

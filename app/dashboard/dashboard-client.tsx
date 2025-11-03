@@ -227,7 +227,7 @@ export default function DashboardClient() {
 
   if (loading) {
     return (
-      <div className="container mx-auto max-w-7xl px-4 py-8">
+      <div className="container mx-auto max-w-7xl px-4 py-8 overflow-x-hidden">
         <div className="flex items-center justify-center h-64">
           <div className="text-gray-500">Loading...</div>
         </div>
@@ -236,7 +236,7 @@ export default function DashboardClient() {
   }
 
   return (
-    <div className="container mx-auto max-w-7xl px-4 py-8">
+    <div className="container mx-auto max-w-7xl px-4 py-8 overflow-x-hidden">
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900">
           {viewType === "requests" 
@@ -256,7 +256,7 @@ export default function DashboardClient() {
           <Link href="/dashboard/new-request">
             <Card className="hover:shadow-lg transition-all cursor-pointer border-2 border-transparent hover:border-blue-500">
               <CardHeader>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3 sm:flex-nowrap">
                   <div className="p-3 bg-blue-100 rounded-lg">
                     <FileText className="h-6 w-6 text-blue-600" />
                   </div>
@@ -296,7 +296,7 @@ export default function DashboardClient() {
             }}
           >
             <CardHeader>
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3 sm:flex-nowrap">
                 <div className={`p-3 rounded-lg ${
                   requests.some(r => r.status === "APPROVED") 
                     ? "bg-green-100" 
@@ -324,7 +324,7 @@ export default function DashboardClient() {
 
       {/* Filter Controls */}
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex flex-wrap items-center gap-2 flex-shrink-0 sm:flex-nowrap">
           <Filter className="h-5 w-5 text-gray-500" />
           <span className="text-sm font-medium text-gray-700">Filter by Status:</span>
         </div>
@@ -388,13 +388,13 @@ export default function DashboardClient() {
           {filteredRequests.map((request) => (
             <Card key={request.id} className="hover:shadow-lg transition-shadow">
               <CardHeader>
-                <div className="flex items-start justify-between">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
+                    <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap sm:gap-3 mb-2">
                       <CardTitle className="text-xl">{request.eventName}</CardTitle>
                       <StatusBadge status={request.status} />
                     </div>
-                    <CardDescription className="flex items-center gap-4 text-sm">
+                    <CardDescription className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm sm:flex-nowrap">
                       <span className="flex items-center gap-1">
                         <Calendar className="h-4 w-4" />
                         {formatDate(request.travelDateFrom)} - {formatDate(request.travelDateTo)}
@@ -405,7 +405,7 @@ export default function DashboardClient() {
                       </span>
                     </CardDescription>
                   </div>
-                  <div className="text-right">
+                  <div className="mt-2 w-full text-left sm:mt-0 sm:w-auto sm:text-right">
                     <div className="text-2xl font-bold text-blue-600">
                       €{request.estimatedCosts.toFixed(2)}
                     </div>
@@ -429,15 +429,15 @@ export default function DashboardClient() {
 
                   {request.status === "APPROVED" && (
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                         <div>
                           <div className="text-sm font-medium text-blue-900">Expense Claims</div>
                           <div className="text-xs text-blue-700 mt-1">
                             {request.expenseClaims?.length || 0} claims • €{totalExpenses(request).toFixed(2)} total
                           </div>
                         </div>
-                        <Link href={`/dashboard/expenses/${request.id}`}>
-                          <Button size="sm" variant="outline" className="gap-2">
+                        <Link href={`/dashboard/expenses/${request.id}`} className="w-full sm:w-auto">
+                          <Button size="sm" variant="outline" className="w-full gap-2 sm:w-auto">
                             <DollarSign className="h-4 w-4" />
                             Submit Expense Claim
                           </Button>
@@ -446,10 +446,10 @@ export default function DashboardClient() {
                     </div>
                   )}
 
-                  <div className="flex gap-2 pt-2">
+                  <div className="flex flex-col gap-2 pt-2 sm:flex-row sm:flex-wrap">
                     {request.status === "AMENDMENT_REQUESTED" && (
                       <Link href={`/dashboard/edit-request/${request.id}`}>
-                        <Button size="sm" className="gap-2">
+                        <Button size="sm" className="w-full gap-2 sm:w-auto">
                           <Edit className="h-4 w-4" />
                           Amend & Resubmit
                         </Button>
@@ -461,7 +461,7 @@ export default function DashboardClient() {
                         size="sm"
                         variant="outline"
                         onClick={() => handleCloseTrip(request.id)}
-                        className="gap-2"
+                        className="w-full gap-2 sm:w-auto"
                       >
                         <Lock className="h-4 w-4" />
                         Close Trip
@@ -469,7 +469,7 @@ export default function DashboardClient() {
                     )}
 
                     <Link href={`/dashboard/request/${request.id}`}>
-                      <Button size="sm" variant="ghost">
+                      <Button size="sm" variant="ghost" className="w-full sm:w-auto">
                         View Details
                       </Button>
                     </Link>
@@ -515,13 +515,13 @@ export default function DashboardClient() {
               return (
                 <Card key={claim.id} className="hover:shadow-lg transition-shadow">
                   <CardHeader>
-                    <div className="flex items-start justify-between">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                       <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
+                        <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap sm:gap-3 mb-2">
                           <CardTitle className="text-xl">{claim.travelRequest?.eventName || "Expense Claim"}</CardTitle>
                           <StatusBadge status={claim.status || "PENDING"} />
                         </div>
-                        <CardDescription className="flex items-center gap-4 text-sm">
+                        <CardDescription className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm sm:flex-nowrap">
                           <span className="flex items-center gap-1">
                             <Calendar className="h-4 w-4" />
                             {claim.date ? formatDate(claim.date) : "N/A"}
@@ -532,7 +532,7 @@ export default function DashboardClient() {
                           </span>
                         </CardDescription>
                       </div>
-                      <div className="text-right">
+                      <div className="mt-2 w-full text-left sm:mt-0 sm:w-auto sm:text-right">
                         <div className="text-2xl font-bold text-purple-600">
                           €{claim.amount?.toFixed(2) || '0.00'}
                         </div>
@@ -548,19 +548,19 @@ export default function DashboardClient() {
                           <div className="text-sm font-medium text-gray-700 mb-2">Cost Breakdown</div>
                           <div className="space-y-1 text-sm">
                             {claim.accommodation && claim.accommodation > 0 && (
-                              <div className="flex justify-between text-gray-600">
+                              <div className="flex flex-col gap-1 text-gray-600 sm:flex-row sm:items-center sm:justify-between">
                                 <span>Accommodation:</span>
                                 <span className="font-medium">€{claim.accommodation.toFixed(2)}</span>
                               </div>
                             )}
                             {claim.transportation && claim.transportation > 0 && (
-                              <div className="flex justify-between text-gray-600">
+                              <div className="flex flex-col gap-1 text-gray-600 sm:flex-row sm:items-center sm:justify-between">
                                 <span>Transportation:</span>
                                 <span className="font-medium">€{claim.transportation.toFixed(2)}</span>
                               </div>
                             )}
                             {claim.otherAmount && claim.otherAmount > 0 && (
-                              <div className="flex justify-between text-gray-600">
+                              <div className="flex flex-col gap-1 text-gray-600 sm:flex-row sm:items-center sm:justify-between">
                                 <span>Other{claim.otherDescription ? ` (${claim.otherDescription})` : ''}:</span>
                                 <span className="font-medium">€{claim.otherAmount.toFixed(2)}</span>
                               </div>
@@ -578,11 +578,11 @@ export default function DashboardClient() {
                       )}
 
                       {/* Action Buttons */}
-                      <div className="flex gap-2 pt-2">
+                      <div className="flex flex-col gap-2 pt-2 sm:flex-row sm:flex-wrap">
                         {claim.status === "APPROVED" && (
                           <Button 
                             size="sm" 
-                            className="gap-2"
+                            className="w-full gap-2 sm:w-auto"
                             onClick={() => handleAcknowledgePayment(claim.id)}
                           >
                             <CheckCircle className="h-4 w-4" />
@@ -594,7 +594,7 @@ export default function DashboardClient() {
                           <Link href={`/dashboard/expenses/edit/${claim.id}`}>
                             <Button 
                               size="sm" 
-                              className="gap-2 bg-amber-600 hover:bg-amber-700"
+                              className="w-full gap-2 bg-amber-600 hover:bg-amber-700 sm:w-auto"
                             >
                               <Edit className="h-4 w-4" />
                               Resubmit Claim
