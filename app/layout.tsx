@@ -4,6 +4,7 @@ import { Poppins, Allura } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { Header } from "@/components/header";
+import { PageTransition } from "@/components/page-transition";
 
 const poppins = Poppins({ 
   subsets: ["latin"],
@@ -30,6 +31,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning className={allura.variable}>
       <body className={poppins.className}>
         <Providers>
+          <PageTransition />
           <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
             <Header />
             <main>{children}</main>

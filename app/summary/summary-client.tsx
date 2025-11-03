@@ -22,6 +22,7 @@ import Link from "next/link";
 import toast from "react-hot-toast";
 import { motion, animate, useMotionValue } from "framer-motion";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useRouter } from "next/navigation";
 
 interface SummaryData {
   travelRequests: {
@@ -41,25 +42,58 @@ interface SummaryData {
   isApprover: boolean;
 }
 
-function MiniEmptyArt({ className }: { className?: string }) {
+function DashboardSkeleton() {
   return (
-    <svg
-      viewBox="0 0 48 48"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      aria-hidden="true"
-    >
-      <rect x="8" y="12" width="32" height="24" rx="6" />
-      <path d="M16 20h16M16 26h10" />
-      <circle cx="34" cy="28" r="3" />
-      <path d="M14 36c-2 4-6 5-6 5" />
-      <path d="M34 9l2.5-2.5" />
-      <path d="M40 16l4-1" />
-    </svg>
+    <div className="container mx-auto max-w-7xl px-4 py-16 overflow-x-hidden">
+      <div className="mb-8 space-y-3">
+        <div className="h-8 w-48 rounded-full bg-gray-200 animate-pulse" />
+        <div className="h-4 w-64 rounded-full bg-gray-100 animate-pulse" />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
+        {Array.from({ length: 2 }).map((_, index) => (
+          <div
+            key={`skeleton-quick-action-${index}`}
+            className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm animate-pulse"
+          >
+            <div className="flex items-center gap-4">
+              <div className="h-12 w-12 rounded-lg bg-gray-200" />
+              <div className="space-y-2 w-full">
+                <div className="h-5 w-40 rounded-full bg-gray-200" />
+                <div className="h-4 w-56 rounded-full bg-gray-100" />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {Array.from({ length: 2 }).map((_, sectionIndex) => (
+        <div key={`skeleton-section-${sectionIndex}`} className="mb-10 space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="h-6 w-6 rounded-full bg-gray-200" />
+              <div className="h-6 w-48 rounded-full bg-gray-200" />
+              <div className="h-6 w-20 rounded-full bg-gray-100" />
+            </div>
+            <div className="h-4 w-28 rounded-full bg-gray-100" />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+            {Array.from({ length: 5 }).map((__, cardIndex) => (
+              <div
+                key={`skeleton-card-${sectionIndex}-${cardIndex}`}
+                className="rounded-xl border border-gray-200 bg-white p-4 sm:p-6 shadow-sm animate-pulse space-y-4"
+              >
+                <div className="h-5 w-10 rounded-full bg-gray-200" />
+                <div className="space-y-2">
+                  <div className="h-8 w-12 rounded-lg bg-gray-200" />
+                  <div className="h-4 w-24 rounded-full bg-gray-100" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -88,6 +122,7 @@ function AnimatedCount({ value }: { value: number }) {
 }
 
 export default function SummaryClient() {
+  const router = useRouter();
   const { data: session } = useSession() || {};
   const [summary, setSummary] = useState<SummaryData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -128,13 +163,7 @@ export default function SummaryClient() {
   };
 
   if (loading) {
-    return (
-      <div className="container mx-auto max-w-7xl px-4 py-8 overflow-x-hidden">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-gray-500">Loading...</div>
-        </div>
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   if (!summary) {
@@ -159,10 +188,6 @@ export default function SummaryClient() {
       tooltip: summary.isApprover
         ? "Requests awaiting your approval"
         : "Awaiting reviewer action",
-      emptyMessage: summary.isApprover
-        ? "No requests awaiting your approval"
-        : "No pending requests yet",
-      emptyArtColor: "text-yellow-300",
     },
     {
       status: "approved",
@@ -172,10 +197,6 @@ export default function SummaryClient() {
       gradientTo: "to-green-50",
       borderColor: "border-green-300/40",
       tooltip: "Request approved and ready for travel",
-      emptyMessage: summary.isApprover
-        ? "You haven't approved any requests yet"
-        : "No approved trips yet",
-      emptyArtColor: "text-green-300",
     },
     {
       status: "denied",
@@ -185,10 +206,6 @@ export default function SummaryClient() {
       gradientTo: "to-red-50",
       borderColor: "border-red-300/40",
       tooltip: "Request denied – review the feedback to adjust",
-      emptyMessage: summary.isApprover
-        ? "You haven't denied any requests yet"
-        : "No denied requests yet",
-      emptyArtColor: "text-red-300",
     },
     {
       status: "amendmentRequested",
@@ -198,10 +215,6 @@ export default function SummaryClient() {
       gradientTo: "to-orange-50",
       borderColor: "border-orange-300/40",
       tooltip: "Changes requested – update the details and resubmit",
-      emptyMessage: summary.isApprover
-        ? "No amendment requests outstanding"
-        : "No amendment requests yet",
-      emptyArtColor: "text-orange-300",
     },
     {
       status: "closed",
@@ -211,8 +224,6 @@ export default function SummaryClient() {
       gradientTo: "to-gray-50",
       borderColor: "border-gray-300/40",
       tooltip: "Closed trips cannot be edited",
-      emptyMessage: "No closed trips yet",
-      emptyArtColor: "text-gray-300",
     },
   ];
 
@@ -228,10 +239,6 @@ export default function SummaryClient() {
       tooltip: summary.isApprover
         ? "Claims awaiting your approval"
         : "Waiting for finance review",
-      emptyMessage: summary.isApprover
-        ? "No claims awaiting your approval"
-        : "No pending claims yet",
-      emptyArtColor: "text-yellow-300",
     },
     {
       status: "approved",
@@ -241,10 +248,6 @@ export default function SummaryClient() {
       gradientTo: "to-green-50",
       borderColor: "border-green-300/40",
       tooltip: "Approved and queued for reimbursement",
-      emptyMessage: summary.isApprover
-        ? "No claims approved for payment yet"
-        : "No approved claims yet",
-      emptyArtColor: "text-green-300",
     },
     {
       status: "denied",
@@ -254,10 +257,6 @@ export default function SummaryClient() {
       gradientTo: "to-red-50",
       borderColor: "border-red-300/40",
       tooltip: "Claim denied – check notes for details",
-      emptyMessage: summary.isApprover
-        ? "You haven't denied any claims yet"
-        : "No denied claims yet",
-      emptyArtColor: "text-red-300",
     },
     {
       status: "amendmentRequested",
@@ -267,10 +266,6 @@ export default function SummaryClient() {
       gradientTo: "to-orange-50",
       borderColor: "border-orange-300/40",
       tooltip: "More info required before approval",
-      emptyMessage: summary.isApprover
-        ? "No claims awaiting amendments"
-        : "No amendment requests yet",
-      emptyArtColor: "text-orange-300",
     },
     {
       status: "closed",
@@ -280,8 +275,6 @@ export default function SummaryClient() {
       gradientTo: "to-gray-50",
       borderColor: "border-gray-300/40",
       tooltip: "Closed claims are archived",
-      emptyMessage: "No closed claims yet",
-      emptyArtColor: "text-gray-300",
     },
   ];
 
@@ -347,7 +340,7 @@ export default function SummaryClient() {
                   toast.error("You already have an active expense claim for this travel request");
                   return;
                 }
-                window.location.href = `/dashboard/expenses/${firstApprovedRequestId}`;
+                router.push(`/dashboard/expenses/${firstApprovedRequestId}`);
               } else {
                 toast.error("You need an approved travel request before submitting expense claims");
               }
@@ -453,12 +446,6 @@ export default function SummaryClient() {
                     <CardTitle className="text-xs sm:text-sm font-medium text-gray-700 leading-tight">
                       {card.label}
                     </CardTitle>
-                    {count === 0 && (
-                      <div className="mt-3 flex items-center gap-3 text-sm text-gray-500">
-                        <MiniEmptyArt className={`h-10 w-10 ${card.emptyArtColor}`} />
-                        <span>{card.emptyMessage}</span>
-                      </div>
-                    )}
                   </CardContent>
                 </Card>
               </Link>
@@ -541,12 +528,6 @@ export default function SummaryClient() {
                     <CardTitle className="text-xs sm:text-sm font-medium text-gray-700 leading-tight">
                       {card.label}
                     </CardTitle>
-                    {count === 0 && (
-                      <div className="mt-3 flex items-center gap-3 text-sm text-gray-500">
-                        <MiniEmptyArt className={`h-10 w-10 ${card.emptyArtColor}`} />
-                        <span>{card.emptyMessage}</span>
-                      </div>
-                    )}
                   </CardContent>
                 </Card>
               </Link>
