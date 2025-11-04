@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, Send } from "lucide-react";
+import { ArrowLeft, PlaneTakeoff, Send } from "lucide-react";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import { COUNTRIES } from "@/lib/countries";
@@ -482,6 +482,15 @@ export default function NewRequestPage() {
         </CardContent>
       </Card>
     </div>
+    {loading && (
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gradient-to-br from-indigo-50 via-white to-indigo-100/90 backdrop-blur-sm">
+        <div className="flex flex-col items-center gap-5 text-center" role="status" aria-live="assertive">
+          <PlaneTakeoff className="h-12 w-12 text-indigo-600 animate-bounce" />
+          <div className="h-10 w-10 rounded-full border-t-2 border-b-2 border-indigo-600/80 animate-spin" />
+          <p className="text-lg font-medium text-indigo-800">Submitting your travel request...</p>
+        </div>
+      </div>
+    )}
   </div>
 );
 }
