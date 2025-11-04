@@ -4,6 +4,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
+import { useLoading } from "@/context/loading-context";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/status-badge";
@@ -76,12 +77,13 @@ interface ExpenseClaim {
 export default function DashboardClient() {
   const { data: session } = useSession() || {};
   const searchParams = useSearchParams();
+  const { finishLoading } = useLoading();
   const [requests, setRequests] = useState<TravelRequest[]>([]);
   const [expenseClaims, setExpenseClaims] = useState<ExpenseClaim[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [viewType, setViewType] = useState<"requests" | "expenses">("requests");
-  
+
   const isApprover = session?.user?.role === "APPROVER";
 
   useEffect(() => {
@@ -118,6 +120,7 @@ export default function DashboardClient() {
       toast.error("Failed to fetch requests");
     } finally {
       setLoading(false);
+      finishLoading();
     }
   };
 
@@ -131,6 +134,7 @@ export default function DashboardClient() {
       toast.error("Failed to fetch expense claims");
     } finally {
       setLoading(false);
+      finishLoading();
     }
   };
 

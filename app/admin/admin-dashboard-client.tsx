@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
+import { useLoading } from "@/context/loading-context";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Users,
@@ -74,6 +75,7 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function AdminDashboardClient() {
   const { data: session } = useSession() || {};
+  const { finishLoading } = useLoading();
   const [stats, setStats] = useState<DashboardStats>({
     totalUsers: 0,
     totalRequests: 0,
@@ -95,9 +97,40 @@ export default function AdminDashboardClient() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchStats();
-    fetchBudgetData();
-  }, []);
+    const loadData = async () => {
+      try {
+        // Fetch both in parallel
+        const year = new Date().getFullYear();
+        const [statsResponse, budgetResponse] = await Promise.all([
+          fetch("/api/admin/stats"),
+          fetch(`/api/admin/budget?year=${year}`),
+        ]);
+
+        if (statsResponse.ok) {
+          const statsData = await statsResponse.json();
+          setStats(statsData);
+        }
+
+        if (budgetResponse.ok) {
+          const budgetDataResponse = await budgetResponse.json();
+          const utilization = budgetDataResponse.totalBudget > 0
+            ? ((budgetDataResponse.reservedAmount + budgetDataResponse.actualSpent) / budgetDataResponse.totalBudget) * 100
+            : 0;
+          setBudgetData({
+            ...budgetDataResponse,
+            utilization: Math.round(utilization * 10) / 10, // Round to 1 decimal place
+          });
+        }
+      } catch (error) {
+        console.error("Failed to fetch data:", error);
+      } finally {
+        setLoading(false);
+        finishLoading();
+      }
+    };
+
+    loadData();
+  }, [finishLoading]);
 
   const fetchStats = async () => {
     try {
@@ -110,6 +143,7 @@ export default function AdminDashboardClient() {
       console.error("Failed to fetch stats:", error);
     } finally {
       setLoading(false);
+      finishLoading();
     }
   };
 
@@ -119,8 +153,8 @@ export default function AdminDashboardClient() {
       const response = await fetch(`/api/admin/budget?year=${year}`);
       if (response.ok) {
         const data = await response.json();
-        const utilization = data.totalBudget > 0 
-          ? ((data.reservedAmount + data.actualSpent) / data.totalBudget) * 100 
+        const utilization = data.totalBudget > 0
+          ? ((data.reservedAmount + data.actualSpent) / data.totalBudget) * 100
           : 0;
         setBudgetData({
           ...data,
@@ -129,6 +163,8 @@ export default function AdminDashboardClient() {
       }
     } catch (error) {
       console.error("Failed to fetch budget data:", error);
+    } finally {
+      finishLoading();
     }
   };
 

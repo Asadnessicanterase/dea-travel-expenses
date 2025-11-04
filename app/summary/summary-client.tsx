@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
+import { useLoading } from "@/context/loading-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   FileText,
@@ -124,6 +125,7 @@ function AnimatedCount({ value }: { value: number }) {
 export default function SummaryClient() {
   const router = useRouter();
   const { data: session } = useSession() || {};
+  const { finishLoading } = useLoading();
   const [summary, setSummary] = useState<SummaryData | null>(null);
   const [loading, setLoading] = useState(true);
   const [hasApprovedRequest, setHasApprovedRequest] = useState(false);
@@ -131,9 +133,34 @@ export default function SummaryClient() {
   const [firstApprovedRequest, setFirstApprovedRequest] = useState<any>(null);
 
   useEffect(() => {
-    fetchSummary();
-    fetchUserRequests();
-  }, []);
+    const loadData = async () => {
+      try {
+        // Fetch both in parallel
+        const [summaryResponse, requestsResponse] = await Promise.all([
+          fetch("/api/summary"),
+          fetch("/api/travel-requests"),
+        ]);
+
+        const summaryData = await summaryResponse.json();
+        setSummary(summaryData);
+
+        const requestsData = await requestsResponse.json();
+        const approvedRequest = requestsData.requests?.find((r: any) => r.status === "APPROVED");
+        if (approvedRequest) {
+          setHasApprovedRequest(true);
+          setFirstApprovedRequestId(approvedRequest.id);
+          setFirstApprovedRequest(approvedRequest);
+        }
+      } catch (error) {
+        toast.error("Failed to fetch summary");
+      } finally {
+        setLoading(false);
+        finishLoading();
+      }
+    };
+
+    loadData();
+  }, [finishLoading]);
 
   const fetchSummary = async () => {
     try {
@@ -144,6 +171,7 @@ export default function SummaryClient() {
       toast.error("Failed to fetch summary");
     } finally {
       setLoading(false);
+      finishLoading();
     }
   };
 

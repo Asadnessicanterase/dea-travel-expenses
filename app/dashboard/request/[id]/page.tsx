@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { useLoading } from "@/context/loading-context";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/status-badge";
@@ -41,6 +42,7 @@ interface TravelRequest {
 
 export default function RequestDetailsPage() {
   const params = useParams();
+  const { finishLoading } = useLoading();
   const id = params?.id as string;
   const [request, setRequest] = useState<TravelRequest | null>(null);
   const [loading, setLoading] = useState(true);
@@ -65,6 +67,7 @@ export default function RequestDetailsPage() {
       toast.error("Failed to fetch request");
     } finally {
       setLoading(false);
+      finishLoading();
     }
   };
 

@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { useLoading } from "@/context/loading-context";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -129,6 +130,7 @@ interface ExpenseClaim {
 
 export default function ApprovalsClient() {
   const searchParams = useSearchParams();
+  const { finishLoading } = useLoading();
   const [activeTab, setActiveTab] = useState<string>("requests");
   
   // Travel Requests state
@@ -175,9 +177,30 @@ export default function ApprovalsClient() {
   }, [searchParams]);
 
   useEffect(() => {
-    fetchRequests();
-    fetchExpenseClaims();
-  }, []);
+    const loadData = async () => {
+      try {
+        // Fetch both in parallel
+        const [requestsResponse, claimsResponse] = await Promise.all([
+          fetch("/api/travel-requests"),
+          fetch("/api/expense-claims"),
+        ]);
+
+        const requestsData = await requestsResponse.json();
+        setRequests(requestsData.requests || []);
+
+        const claimsData = await claimsResponse.json();
+        setExpenseClaims(claimsData.expenseClaims || []);
+      } catch (error) {
+        toast.error("Failed to fetch data");
+      } finally {
+        setRequestsLoading(false);
+        setClaimsLoading(false);
+        finishLoading();
+      }
+    };
+
+    loadData();
+  }, [finishLoading]);
 
   const fetchRequests = async () => {
     try {
@@ -188,6 +211,7 @@ export default function ApprovalsClient() {
       toast.error("Failed to fetch requests");
     } finally {
       setRequestsLoading(false);
+      finishLoading();
     }
   };
 
@@ -200,6 +224,7 @@ export default function ApprovalsClient() {
       toast.error("Failed to fetch expense claims");
     } finally {
       setClaimsLoading(false);
+      finishLoading();
     }
   };
 
@@ -644,32 +669,34 @@ export default function ApprovalsClient() {
                             </div>
                           </div>
 
-                          <div className="flex flex-col gap-2 pt-4 border-t sm:flex-row sm:flex-wrap">
-                            <Button
-                              size="sm"
-                              className="w-full gap-2 bg-green-600 hover:bg-green-700 sm:w-auto"
-                              onClick={() => openRequestActionDialog(request, "APPROVE")}
-                            >
-                              <CheckCircle className="h-4 w-4" />
-                              Approve
-                            </Button>
+                          <div className="flex flex-col gap-2 pt-4 border-t">
+                            <div className="flex flex-col gap-2 sm:flex-row">
+                              <Button
+                                size="sm"
+                                className="w-full gap-2 bg-green-600 hover:bg-green-700 sm:flex-1"
+                                onClick={() => openRequestActionDialog(request, "APPROVE")}
+                              >
+                                <CheckCircle className="h-4 w-4" />
+                                Sign and Approve
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="w-full gap-2 border-red-500 text-red-700 hover:bg-red-50 sm:flex-1"
+                                onClick={() => openRequestActionDialog(request, "DENY")}
+                              >
+                                <XCircle className="h-4 w-4" />
+                                Deny
+                              </Button>
+                            </div>
                             <Button
                               size="sm"
                               variant="outline"
-                              className="w-full gap-2 border-orange-500 text-orange-700 hover:bg-orange-50 sm:w-auto"
+                              className="w-full gap-2 border-orange-500 text-orange-700 hover:bg-orange-50 sm:w-full"
                               onClick={() => openRequestActionDialog(request, "REQUEST_AMENDMENT")}
                             >
                               <AlertCircle className="h-4 w-4" />
                               Request Amendment
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="w-full gap-2 border-red-500 text-red-700 hover:bg-red-50 sm:w-auto"
-                              onClick={() => openRequestActionDialog(request, "DENY")}
-                            >
-                              <XCircle className="h-4 w-4" />
-                              Deny
                             </Button>
                           </div>
                         </CardContent>
@@ -1078,7 +1105,7 @@ export default function ApprovalsClient() {
                             <div className="flex flex-col gap-2 sm:flex-row">
                               <Button
                                 size="sm"
-                                className="w-full gap-2 bg-green-600 hover:bg-green-700 sm:w-auto"
+                                className="w-full gap-2 bg-green-600 hover:bg-green-700 sm:flex-1"
                                 onClick={() => openClaimActionDialog(claim, "APPROVE")}
                               >
                                 <CheckCircle className="h-4 w-4" />
@@ -1087,7 +1114,7 @@ export default function ApprovalsClient() {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                className="w-full gap-2 border-red-500 text-red-700 hover:bg-red-50 sm:w-auto"
+                                className="w-full gap-2 border-red-500 text-red-700 hover:bg-red-50 sm:flex-1"
                                 onClick={() => openClaimActionDialog(claim, "DENY")}
                               >
                                 <XCircle className="h-4 w-4" />
@@ -1097,7 +1124,7 @@ export default function ApprovalsClient() {
                             <Button
                               size="sm"
                               variant="outline"
-                              className="w-full gap-2 border-amber-500 text-amber-700 hover:bg-amber-50 sm:w-auto"
+                              className="w-full gap-2 border-amber-500 text-amber-700 hover:bg-amber-50 sm:w-full"
                               onClick={() => openClaimActionDialog(claim, "REQUEST_AMENDMENT")}
                             >
                               <AlertCircle className="h-4 w-4" />

@@ -4,6 +4,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { useLoading } from "@/context/loading-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,6 +25,7 @@ import { COUNTRIES } from "@/lib/countries";
 export default function NewRequestPage() {
   const router = useRouter();
   const { data: session } = useSession() || {};
+  const { finishLoading } = useLoading();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
@@ -44,6 +46,11 @@ export default function NewRequestPage() {
     description: string;
     estimatedCost: string;
   }[]>([{ description: "", estimatedCost: "" }]);
+
+  // Signal that page is loaded
+  useEffect(() => {
+    finishLoading();
+  }, [finishLoading]);
 
   // Auto-populate name and position from session
   useEffect(() => {

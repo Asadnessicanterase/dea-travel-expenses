@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useLoading } from "@/context/loading-context";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -182,6 +183,7 @@ const countryCoordinates: Record<string, [number, number]> = {
 };
 
 export default function ReportsClient() {
+  const { finishLoading } = useLoading();
   const [requests, setRequests] = useState<TravelRequest[]>([]);
   const [claims, setClaims] = useState<ExpenseClaim[]>([]);
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
@@ -221,6 +223,7 @@ export default function ReportsClient() {
       toast.error("Failed to load reports");
     } finally {
       setLoading(false);
+      finishLoading();
     }
   };
 

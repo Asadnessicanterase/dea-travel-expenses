@@ -3,6 +3,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
+import { useLoading } from "@/context/loading-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -51,6 +52,7 @@ interface TravelRequest {
 
 export default function ExpensesPage() {
   const params = useParams();
+  const { finishLoading } = useLoading();
   const id = params?.id as string;
   const [request, setRequest] = useState<TravelRequest | null>(null);
   const [loading, setLoading] = useState(true);
@@ -121,7 +123,7 @@ export default function ExpensesPage() {
     try {
       const response = await fetch(`/api/travel-requests/${id}`);
       const data = await response.json();
-      
+
       if (response.ok) {
         setRequest(data.travelRequest);
         // Auto-populate description with event name + "Expenses" if not already set
@@ -138,6 +140,7 @@ export default function ExpensesPage() {
       toast.error("Failed to fetch request");
     } finally {
       setLoading(false);
+      finishLoading();
     }
   };
 

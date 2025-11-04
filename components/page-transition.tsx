@@ -6,18 +6,19 @@ import { AnimatePresence, motion } from "framer-motion";
 import Lottie from "lottie-react";
 import planeAnimation from "@/public/animations/travel-plane.json";
 import coinAnimation from "@/public/animations/expense-coin.json";
+import { useLoading } from "@/context/loading-context";
 
 const travelMatchers = [/travel/, /request/, /approval/, /itinerary/, /trip/];
 const expenseMatchers = [/expense/, /claim/, /reimbursement/, /finance/];
 
 export function PageTransition() {
   const pathname = usePathname();
+  const { isLoading, startLoading, finishLoading } = useLoading();
   const [isVisible, setIsVisible] = useState(false);
   const [animationKey, setAnimationKey] = useState(0);
   const [animationData, setAnimationData] = useState<Record<string, unknown> | null>(null);
 
   const previousPath = useRef<string | null>(null);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const initialRender = useRef(true);
 
   const selectedAnimation = useMemo(() => {
@@ -37,6 +38,7 @@ export function PageTransition() {
     return planeAnimation;
   }, [pathname]);
 
+  // Handle route changes - start loading animation
   useEffect(() => {
     if (initialRender.current) {
       initialRender.current = false;
@@ -51,26 +53,16 @@ export function PageTransition() {
     setAnimationData(selectedAnimation as Record<string, unknown>);
     setAnimationKey((key) => key + 1);
     setIsVisible(true);
-
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
-
-    timeoutRef.current = setTimeout(() => {
-      setIsVisible(false);
-    }, 1200);
+    startLoading();
 
     previousPath.current = pathname;
-  }, [pathname, selectedAnimation]);
+  }, [pathname, selectedAnimation, startLoading]);
 
-  useEffect(
-    () => () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-    },
-    []
-  );
+  // Sync isVisible with isLoading context
+  useEffect(() => {
+    setIsVisible(isLoading);
+  }, [isLoading]);
+
 
   return (
     <AnimatePresence>
@@ -94,7 +86,7 @@ export function PageTransition() {
             <div className="flex h-[180px] w-[180px] items-center justify-center overflow-visible">
               <Lottie
                 animationData={animationData}
-                loop={false}
+                loop={isLoading}
                 autoplay
                 className="h-full w-full object-contain"
               />

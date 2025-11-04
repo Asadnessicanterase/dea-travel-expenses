@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
+import { useLoading } from "@/context/loading-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,6 +24,7 @@ import { COUNTRIES } from "@/lib/countries";
 export default function EditRequestPage() {
   const router = useRouter();
   const params = useParams();
+  const { finishLoading } = useLoading();
   const id = params?.id as string;
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
@@ -77,6 +79,7 @@ export default function EditRequestPage() {
       router.push("/dashboard");
     } finally {
       setFetching(false);
+      finishLoading();
     }
   };
 

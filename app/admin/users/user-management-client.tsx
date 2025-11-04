@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useLoading } from "@/context/loading-context";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,6 +58,7 @@ interface User {
 }
 
 export default function UserManagementClient() {
+  const { finishLoading } = useLoading();
   const [users, setUsers] = useState<User[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
@@ -79,9 +81,35 @@ export default function UserManagementClient() {
   const [newPassword, setNewPassword] = useState("");
 
   useEffect(() => {
-    fetchUsers();
-    fetchDepartments();
-  }, []);
+    const loadData = async () => {
+      try {
+        const [usersResponse, departmentsResponse] = await Promise.all([
+          fetch("/api/admin/users"),
+          fetch("/api/admin/departments"),
+        ]);
+
+        if (usersResponse.ok) {
+          const usersData = await usersResponse.json();
+          setUsers(usersData);
+        } else {
+          toast.error("Failed to fetch users");
+        }
+
+        if (departmentsResponse.ok) {
+          const departmentsData = await departmentsResponse.json();
+          setDepartments(departmentsData.departments || []);
+        }
+      } catch (error) {
+        console.error("Failed to fetch data:", error);
+        toast.error("Failed to fetch data");
+      } finally {
+        setLoading(false);
+        finishLoading();
+      }
+    };
+
+    loadData();
+  }, [finishLoading]);
 
   const fetchUsers = async () => {
     try {
@@ -97,6 +125,7 @@ export default function UserManagementClient() {
       toast.error("Failed to fetch users");
     } finally {
       setLoading(false);
+      finishLoading();
     }
   };
 
