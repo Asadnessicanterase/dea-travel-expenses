@@ -47,6 +47,10 @@ export default function NewRequestPage() {
     estimatedCost: string;
   }[]>([{ description: "", estimatedCost: "" }]);
 
+  const fieldAppearance =
+    "rounded-xl border border-slate-200/80 bg-white/80 placeholder:text-slate-400 transition-all duration-200 ease-out focus:border-indigo-300 focus:ring-4 focus:ring-indigo-100/70 focus-visible:outline-none";
+  const cardSurface =
+    "rounded-2xl border border-slate-200/70 bg-white/80 shadow-[0_25px_65px_-40px_rgba(15,23,42,0.45)] backdrop-blur-sm";
   // Signal that page is loaded
   useEffect(() => {
     finishLoading();
@@ -155,23 +159,24 @@ export default function NewRequestPage() {
   };
 
   return (
-    <div className="container mx-auto max-w-3xl px-4 py-8 overflow-x-hidden">
-      <Link href="/dashboard">
-        <Button variant="ghost" className="gap-2 mb-6">
-          <ArrowLeft className="h-4 w-4" />
-          Back to Dashboard
-        </Button>
-      </Link>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 py-10">
+      <div className="container mx-auto max-w-3xl px-4 overflow-x-hidden">
+        <Link href="/dashboard">
+          <Button variant="ghost" className="mb-8 gap-2 rounded-xl text-slate-600 hover:bg-slate-100/80 hover:text-slate-900">
+            <ArrowLeft className="h-4 w-4" />
+            Back to Dashboard
+          </Button>
+        </Link>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>New Travel Request</CardTitle>
-          <CardDescription>
-            Fill out the form below to submit a new travel request for approval
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
+        <Card className={cardSurface}>
+          <CardHeader className="space-y-1.5 rounded-t-2xl border-b border-slate-200/60 bg-white/70 pb-6">
+            <CardTitle className="text-2xl font-semibold text-slate-900">New Travel Request</CardTitle>
+            <CardDescription className="text-slate-600">
+              Fill out the form below to submit a new travel request for approval
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-6 sm:p-8">
+            <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Name and Surname *</Label>
@@ -181,7 +186,7 @@ export default function NewRequestPage() {
                   value={formData.name}
                   onChange={handleChange}
                   readOnly
-                  className="bg-gray-50"
+                  className={`${fieldAppearance} bg-slate-50/80`}
                   required
                 />
                 <p className="text-xs text-gray-500">Auto-filled from your profile</p>
@@ -195,7 +200,7 @@ export default function NewRequestPage() {
                   value={formData.position}
                   onChange={handleChange}
                   readOnly
-                  className="bg-gray-50"
+                  className={`${fieldAppearance} bg-slate-50/80`}
                   required
                 />
                 <p className="text-xs text-gray-500">Auto-filled from your profile</p>
@@ -212,10 +217,10 @@ export default function NewRequestPage() {
                   }
                   required
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className={`${fieldAppearance} h-11`}>
                     <SelectValue placeholder="Select a country" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="rounded-xl border border-slate-200/80 bg-white/90 shadow-lg">
                     {COUNTRIES.map((country) => (
                       <SelectItem key={country} value={country}>
                         {country}
@@ -233,6 +238,7 @@ export default function NewRequestPage() {
                   value={formData.destinationCity}
                   onChange={handleChange}
                   placeholder="e.g., Berlin, Paris, Madrid"
+                  className={fieldAppearance}
                 />
               </div>
             </div>
@@ -245,6 +251,7 @@ export default function NewRequestPage() {
                   name="eventOrganiser"
                   value={formData.eventOrganiser}
                   onChange={handleChange}
+                  className={fieldAppearance}
                   required
                 />
               </div>
@@ -257,6 +264,7 @@ export default function NewRequestPage() {
                   value={formData.eventName}
                   onChange={handleChange}
                   placeholder="e.g., Digital Euro Implementation Conference"
+                  className={fieldAppearance}
                   required
                 />
               </div>
@@ -272,6 +280,7 @@ export default function NewRequestPage() {
                   min={new Date().toISOString().split('T')[0]}
                   value={formData.travelDateFrom}
                   onChange={handleChange}
+                  className={fieldAppearance}
                   required
                 />
                 <p className="text-xs text-gray-500">Must be a future date</p>
@@ -286,6 +295,7 @@ export default function NewRequestPage() {
                   min={formData.travelDateFrom || new Date().toISOString().split('T')[0]}
                   value={formData.travelDateTo}
                   onChange={handleChange}
+                  className={fieldAppearance}
                   required
                 />
                 <p className="text-xs text-gray-500">Must be after the start date</p>
@@ -301,31 +311,32 @@ export default function NewRequestPage() {
                 onChange={handleChange}
                 placeholder="Describe the purpose of your travel..."
                 rows={4}
+                className={`${fieldAppearance} min-h-[140px]`}
                 required
               />
             </div>
 
-<div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-  <h4 className="font-semibold text-blue-900 mb-2">Important Travel Guidelines</h4>
-  <ul className="text-sm text-blue-800 space-y-2 list-disc list-inside">
+<div className="rounded-2xl border border-indigo-100/70 bg-indigo-50/60 p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.55)]">
+  <h4 className="mb-3 text-lg font-semibold text-indigo-900">Important Travel Guidelines</h4>
+  <ul className="list-disc list-inside space-y-2 text-sm text-indigo-900/90">
     <li>Trip should only be booked after receiving approval.</li>
     <li>Only transport and accommodation can be claimed.</li>
-    <li>Costs can only be reimbursed if there is an invoice for every expense. The invoices need to be addressed to the DEA's address (doesn't hold for public transportation tickets – here the ticket itself is fine):</li>
+    <li>Costs can only be reimbursed if there is an invoice for every expense. The invoices need to be addressed to the DEA's address (doesn't hold for public transportation tickets - here the ticket itself is fine):</li>
   </ul>
-  <div className="mt-3 ml-6 text-sm text-blue-800 bg-blue-100 p-3 rounded">
+  <div className="mt-3 ml-6 rounded-xl border border-indigo-100/80 bg-indigo-100/60 p-4 text-sm text-indigo-900 shadow-sm">
     <p className="font-medium">Digital Euro Association e.V.</p>
     <p>Thurn- und Taxis-Platz 6</p>
     <p>60313 Frankfurt am Main</p>
     <p>Germany</p>
   </div>
-  <ul className="text-sm text-blue-800 space-y-2 list-disc list-inside mt-3">
+  <ul className="mt-4 list-disc list-inside space-y-2 text-sm text-indigo-900/90">
     <li>For planes, only economy class costs will be reimbursed.</li>
     <li>For trains, only traveling in second/economy class will be reimbursed.</li>
   </ul>
 </div>
 
-            <div className="space-y-4 border-t pt-4">
-              <h3 className="font-semibold text-gray-900">Estimated Costs Breakdown</h3>
+            <div className="space-y-5 border-t border-slate-200/60 pt-6">
+              <h3 className="text-lg font-semibold text-slate-900">Estimated Costs Breakdown</h3>
               
               <div className="space-y-2">
                 <Label htmlFor="estimatedAccommodation">Accommodation (€)</Label>
@@ -338,25 +349,29 @@ export default function NewRequestPage() {
                   value={formData.estimatedAccommodation}
                   onChange={handleChange}
                   placeholder="0.00"
+                  className={fieldAppearance}
                 />
               </div>
 
               <div className="space-y-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <Label className="text-base">Transportation</Label>
+                  <Label className="text-base font-medium text-slate-900">Transportation</Label>
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
                     onClick={addTransportationItem}
-                    className="w-full gap-2 sm:w-auto"
+                    className="w-full gap-2 rounded-xl border-slate-200/80 text-slate-700 hover:bg-slate-100/80 sm:w-auto"
                   >
                     <span className="text-lg">+</span> Add Transportation
                   </Button>
                 </div>
                 
                 {transportationItems.map((item, index) => (
-                  <div key={index} className="p-4 border rounded-lg space-y-3 bg-gray-50">
+                  <div
+                    key={index}
+                    className="space-y-3 rounded-2xl border border-slate-200/60 bg-white/70 p-4 shadow-[0_22px_45px_-38px_rgba(15,23,42,0.5)] sm:p-5"
+                  >
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <Label className="text-sm font-medium">Transportation Item {index + 1}</Label>
                       {transportationItems.length > 1 && (
@@ -380,6 +395,7 @@ export default function NewRequestPage() {
                         value={item.description}
                         onChange={(e) => handleTransportationChange(index, 'description', e.target.value)}
                         placeholder="e.g., Flight, Train, Taxi"
+                        className={fieldAppearance}
                       />
                     </div>
                     <div className="space-y-2">
@@ -394,13 +410,14 @@ export default function NewRequestPage() {
                         value={item.estimatedCost}
                         onChange={(e) => handleTransportationChange(index, 'estimatedCost', e.target.value)}
                         placeholder="0.00"
+                        className={fieldAppearance}
                       />
                     </div>
                   </div>
                 ))}
                 
                 {totalTransportation > 0 && (
-                  <div className="text-sm font-medium text-gray-700 pl-4">
+                  <div className="pl-4 text-sm font-medium text-slate-600">
                     Total Transportation: €{totalTransportation.toFixed(2)}
                   </div>
                 )}
@@ -417,6 +434,7 @@ export default function NewRequestPage() {
                   value={formData.estimatedOther}
                   onChange={handleChange}
                   placeholder="0.00"
+                  className={fieldAppearance}
                 />
               </div>
 
@@ -429,26 +447,33 @@ export default function NewRequestPage() {
                     value={formData.estimatedOtherDescription}
                     onChange={handleChange}
                     placeholder="e.g., Conference materials, meals"
+                    className={fieldAppearance}
                     required
                   />
                 </div>
               )}
 
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <Label className="text-sm font-semibold text-gray-700">Total Estimated Costs</Label>
-                <div className="text-3xl font-bold text-blue-600 mt-1">
+              <div className="rounded-2xl border border-indigo-100/70 bg-gradient-to-r from-indigo-50 via-white to-slate-50 p-5 shadow-[0_25px_50px_-35px_rgba(79,70,229,0.45)]">
+                <Label className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-700/70">
+                  Total Estimated Costs
+                </Label>
+                <div className="mt-2 text-4xl font-semibold tracking-tight text-slate-900">
                   €{calculatedTotal.toFixed(2)}
                 </div>
               </div>
             </div>
 
             <div className="flex flex-col gap-3 pt-4 sm:flex-row sm:gap-4">
-              <Button type="submit" className="w-full gap-2 sm:w-auto" disabled={loading}>
+              <Button
+                type="submit"
+                className="w-full gap-2 rounded-xl shadow-[0_18px_40px_-30px_rgba(79,70,229,0.6)] sm:w-auto"
+                disabled={loading}
+              >
                 <Send className="h-4 w-4" />
                 {loading ? "Submitting..." : "Submit Request"}
               </Button>
               <Link href="/dashboard" className="w-full sm:w-auto">
-                <Button type="button" variant="outline" className="w-full sm:w-auto">
+                <Button type="button" variant="outline" className="w-full rounded-xl border-slate-200/80 sm:w-auto">
                   Cancel
                 </Button>
               </Link>
@@ -457,5 +482,6 @@ export default function NewRequestPage() {
         </CardContent>
       </Card>
     </div>
-  );
+  </div>
+);
 }
