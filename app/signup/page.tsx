@@ -62,7 +62,16 @@ export default function SignupPage() {
       if (result?.error) {
         router.push("/login");
       } else {
-        router.push("/dashboard");
+        // Get the session to check user role
+        const session = await fetch("/api/auth/session").then(r => r.json());
+
+        // Redirect based on user role
+        if (session?.user?.role === "ADMIN") {
+          router.push("/admin");
+        } else {
+          router.push("/summary");
+        }
+
         router.refresh();
       }
     } catch (error) {

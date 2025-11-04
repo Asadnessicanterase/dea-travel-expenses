@@ -11,5 +11,10 @@ export default async function SummaryPage() {
     redirect("/login");
   }
 
+  // Admins should not access the summary page
+  if ((session.user as any)?.role === "ADMIN") {
+    redirect("/admin");
+  }
+
   return <SummaryClient />;
 }

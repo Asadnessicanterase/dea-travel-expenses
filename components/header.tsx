@@ -76,19 +76,23 @@ export function Header() {
             <>
               {/* Desktop Navigation */}
               <div className="hidden lg:flex items-center gap-3">
-                <Link href="/summary">
-                  <Button variant="ghost" size="sm" className="gap-2">
-                    <Home className="h-4 w-4" />
-                    <span className="hidden xl:inline">Summary</span>
-                  </Button>
-                </Link>
+                {(session.user as any)?.role !== "ADMIN" && (
+                  <>
+                    <Link href="/summary">
+                      <Button variant="ghost" size="sm" className="gap-2">
+                        <Home className="h-4 w-4" />
+                        <span className="hidden xl:inline">Summary</span>
+                      </Button>
+                    </Link>
 
-                <Link href="/dashboard">
-                  <Button variant="ghost" size="sm" className="gap-2">
-                    <LayoutDashboard className="h-4 w-4" />
-                    <span className="hidden xl:inline">Requests</span>
-                  </Button>
-                </Link>
+                    <Link href="/dashboard">
+                      <Button variant="ghost" size="sm" className="gap-2">
+                        <LayoutDashboard className="h-4 w-4" />
+                        <span className="hidden xl:inline">Requests</span>
+                      </Button>
+                    </Link>
+                  </>
+                )}
 
                 {(session.user as any)?.role === "APPROVER" && (
                   <Link href="/approvals">
@@ -143,19 +147,23 @@ export function Header() {
                       <span className="text-sm text-gray-700 font-medium">{session.user?.name}</span>
                     </div>
 
-                    <Link href="/summary" onClick={() => setMobileMenuOpen(false)}>
-                      <Button variant="ghost" size="sm" className="w-full justify-start gap-2">
-                        <Home className="h-4 w-4" />
-                        Summary
-                      </Button>
-                    </Link>
+                    {(session.user as any)?.role !== "ADMIN" && (
+                      <>
+                        <Link href="/summary" onClick={() => setMobileMenuOpen(false)}>
+                          <Button variant="ghost" size="sm" className="w-full justify-start gap-2">
+                            <Home className="h-4 w-4" />
+                            Summary
+                          </Button>
+                        </Link>
 
-                    <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)}>
-                      <Button variant="ghost" size="sm" className="w-full justify-start gap-2">
-                        <LayoutDashboard className="h-4 w-4" />
-                        Requests
-                      </Button>
-                    </Link>
+                        <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)}>
+                          <Button variant="ghost" size="sm" className="w-full justify-start gap-2">
+                            <LayoutDashboard className="h-4 w-4" />
+                            Requests
+                          </Button>
+                        </Link>
+                      </>
+                    )}
 
                     {(session.user as any)?.role === "APPROVER" && (
                       <Link href="/approvals" onClick={() => setMobileMenuOpen(false)}>
