@@ -19,6 +19,17 @@ interface BudgetWidgetProps {
   compact?: boolean;
 }
 
+const DASHBOARD_CARD_CLASS =
+  'rounded-3xl border border-indigo-100/80 bg-white/95 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-xl';
+
+const METRIC_CARD_CLASS =
+  'group flex flex-col gap-4 rounded-2xl border border-indigo-100 bg-white/80 p-4 transition-all duration-200 hover:-translate-y-1 hover:shadow-lg';
+
+const ICON_WRAPPER_BASE =
+  'flex h-10 w-10 items-center justify-center rounded-xl transition-transform duration-200 group-hover:scale-105';
+
+const formatCurrency = (value: number) => `EUR ${Number(value || 0).toLocaleString()}`;
+
 export function BudgetWidget({ year, compact = false }: BudgetWidgetProps) {
   const [summary, setSummary] = useState<BudgetSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -45,14 +56,14 @@ export function BudgetWidget({ year, compact = false }: BudgetWidgetProps) {
 
   if (loading) {
     return (
-      <Card>
-        <CardHeader>
+      <Card className={DASHBOARD_CARD_CLASS}>
+        <CardHeader className="space-y-1 pb-6">
           <Skeleton className="h-6 w-40" />
         </CardHeader>
         <CardContent className="space-y-3">
-          <Skeleton className="h-16 w-full" />
-          <Skeleton className="h-16 w-full" />
-          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-16 w-full rounded-2xl" />
+          <Skeleton className="h-16 w-full rounded-2xl" />
+          <Skeleton className="h-16 w-full rounded-2xl" />
         </CardContent>
       </Card>
     );
@@ -60,13 +71,13 @@ export function BudgetWidget({ year, compact = false }: BudgetWidgetProps) {
 
   if (!summary || summary.totalBudget === 0) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Budget Overview</CardTitle>
+      <Card className={DASHBOARD_CARD_CLASS}>
+        <CardHeader className="space-y-1 pb-6">
+          <CardTitle className="text-lg font-semibold text-gray-900">Budget Overview</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center text-muted-foreground">
-            <AlertCircle className="w-5 h-5 mr-2" />
+          <div className="flex items-center gap-3 rounded-2xl border border-indigo-100 bg-white/80 p-4 text-sm text-gray-600">
+            <AlertCircle className="h-5 w-5 text-indigo-500" />
             <span>No budget set for {currentYear}</span>
           </div>
         </CardContent>
@@ -79,94 +90,120 @@ export function BudgetWidget({ year, compact = false }: BudgetWidgetProps) {
   const isOverBudget = summary.availableBudget < 0;
 
   return (
-    <Card className={isOverBudget ? 'border-red-300' : ''}>
-      <CardHeader>
-        <CardTitle className="text-lg">Budget Overview - {currentYear}</CardTitle>
+    <Card className={`${DASHBOARD_CARD_CLASS} ${isOverBudget ? 'border-rose-300' : ''}`}>
+      <CardHeader className="space-y-1 pb-6">
+        <CardTitle className="text-lg font-semibold text-gray-900">
+          Budget Overview - {currentYear}
+        </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-5">
         {/* Responsive Grid: 1 column on mobile, 4 columns on desktop */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 mb-3">
+        <div
+          className={`grid grid-cols-1 gap-4 ${compact ? 'lg:grid-cols-2' : 'lg:grid-cols-4'}`}
+        >
           {/* Total Budget */}
-          <div className="flex flex-col justify-between p-3 bg-blue-50 rounded-lg">
-            <div className="flex items-center mb-2">
-              <DollarSign className="w-4 h-4 text-blue-600 mr-2" />
-              <span className="text-sm font-medium">Total Budget</span>
+          <div className={METRIC_CARD_CLASS}>
+            <div className="flex items-center gap-3">
+              <span className={`${ICON_WRAPPER_BASE} bg-indigo-100 text-indigo-600`}>
+                <DollarSign className="h-4 w-4" />
+              </span>
+              <p className="text-sm font-semibold text-gray-900">Total Budget</p>
             </div>
-            <span className="font-bold text-blue-600 text-lg">
-              €{summary.totalBudget.toLocaleString()}
-            </span>
+            <div>
+              <p className="text-2xl font-bold text-indigo-600">{formatCurrency(summary.totalBudget)}</p>
+              <p className="text-xs text-gray-500">Allocated for {currentYear}</p>
+            </div>
           </div>
 
           {/* Reserved */}
           {!compact && (
-            <div className="flex flex-col justify-between p-3 bg-orange-50 rounded-lg">
-              <div className="flex items-center mb-2">
-                <TrendingDown className="w-4 h-4 text-orange-600 mr-2" />
-                <span className="text-sm font-medium">Reserved</span>
+            <div className={METRIC_CARD_CLASS}>
+              <div className="flex items-center gap-3">
+                <span className={`${ICON_WRAPPER_BASE} bg-indigo-100 text-indigo-600`}>
+                  <TrendingDown className="h-4 w-4" />
+                </span>
+                <p className="text-sm font-semibold text-gray-900">Reserved</p>
               </div>
-              <span className="font-bold text-orange-600 text-lg">
-                €{summary.reservedAmount.toLocaleString()}
-              </span>
+              <div>
+                <p className="text-2xl font-bold text-indigo-600">{formatCurrency(summary.reservedAmount)}</p>
+                <p className="text-xs text-gray-500">Committed funds awaiting completion</p>
+              </div>
             </div>
           )}
 
           {/* Spent */}
           {!compact && (
-            <div className="flex flex-col justify-between p-3 bg-red-50 rounded-lg">
-              <div className="flex items-center mb-2">
-                <TrendingDown className="w-4 h-4 text-red-600 mr-2" />
-                <span className="text-sm font-medium">Spent</span>
+            <div className={METRIC_CARD_CLASS}>
+              <div className="flex items-center gap-3">
+                <span className={`${ICON_WRAPPER_BASE} bg-indigo-100 text-indigo-600`}>
+                  <TrendingDown className="h-4 w-4 rotate-180" />
+                </span>
+                <p className="text-sm font-semibold text-gray-900">Actual Spent</p>
               </div>
-              <span className="font-bold text-red-600 text-lg">
-                €{summary.actualSpent.toLocaleString()}
-              </span>
+              <div>
+                <p className="text-2xl font-bold text-indigo-600">{formatCurrency(summary.actualSpent)}</p>
+                <p className="text-xs text-gray-500">Reconciled expenses</p>
+              </div>
             </div>
           )}
 
           {/* Available */}
-          <div className={`flex flex-col justify-between p-3 rounded-lg border-2 ${
-            isOverBudget 
-              ? 'bg-red-50 border-red-300' 
-              : isNearLimit 
-                ? 'bg-yellow-50 border-yellow-300' 
-                : 'bg-green-50 border-green-300'
-          }`}>
-            <div className="flex items-center mb-2">
-              <TrendingUp className={`w-4 h-4 mr-2 ${
-                isOverBudget 
-                  ? 'text-red-600' 
-                  : isNearLimit 
-                    ? 'text-yellow-600' 
-                    : 'text-green-600'
-              }`} />
-              <span className="text-sm font-medium">Available</span>
+          <div
+            className={`${METRIC_CARD_CLASS} ${
+              isOverBudget
+                ? 'border-rose-200 bg-rose-50/80'
+                : isNearLimit
+                  ? 'border-amber-200 bg-amber-50/80'
+                  : 'border-indigo-100 bg-white/80'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <span
+                className={`${ICON_WRAPPER_BASE} ${
+                  isOverBudget
+                    ? 'bg-rose-100 text-rose-600'
+                    : isNearLimit
+                      ? 'bg-amber-100 text-amber-600'
+                      : 'bg-indigo-100 text-indigo-600'
+                }`}
+              >
+                <TrendingUp className="h-4 w-4" />
+              </span>
+              <p className="text-sm font-semibold text-gray-900">Available</p>
             </div>
-            <span className={`font-bold text-lg ${
-              isOverBudget 
-                ? 'text-red-600' 
-                : isNearLimit 
-                  ? 'text-yellow-600' 
-                  : 'text-green-600'
-            }`}>
-              €{summary.availableBudget.toLocaleString()}
-            </span>
+            <div>
+              <p
+                className={`text-2xl font-bold ${
+                  isOverBudget
+                    ? 'text-rose-600'
+                    : isNearLimit
+                      ? 'text-amber-600'
+                      : 'text-indigo-600'
+                }`}
+              >
+                {formatCurrency(summary.availableBudget)}
+              </p>
+              <p className="text-xs text-gray-500">{Math.round(percentageUsed)}% committed</p>
+            </div>
           </div>
         </div>
 
         {/* Warning messages */}
         {isOverBudget && (
-          <div className="flex items-start p-3 bg-red-50 border border-red-200 rounded-lg">
-            <AlertCircle className="w-4 h-4 text-red-600 mr-2 mt-0.5" />
-            <p className="text-sm text-red-800">
-              <strong>Over Budget!</strong> The current commitments exceed the available budget.
+          <div className="flex items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50/80 p-4 text-sm text-rose-700">
+            <AlertCircle className="mt-0.5 h-5 w-5 text-rose-500" />
+            <p>
+              <span className="font-semibold">Over budget.</span> Current commitments exceed the
+              available allocation.
             </p>
           </div>
         )}
         {isNearLimit && !isOverBudget && (
-          <div className="flex items-start p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <AlertCircle className="w-4 h-4 text-yellow-600 mr-2 mt-0.5" />
-            <p className="text-sm text-yellow-800">
-              <strong>Warning:</strong> {percentageUsed.toFixed(0)}% of budget is committed.
+          <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50/80 p-4 text-sm text-amber-700">
+            <AlertCircle className="mt-0.5 h-5 w-5 text-amber-500" />
+            <p>
+              <span className="font-semibold">Heads up.</span> {percentageUsed.toFixed(0)}% of this
+              year&apos;s budget is already committed.
             </p>
           </div>
         )}
@@ -174,3 +211,4 @@ export function BudgetWidget({ year, compact = false }: BudgetWidgetProps) {
     </Card>
   );
 }
+
