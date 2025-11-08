@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getApprovalFilter, getApproverEmail } from "@/lib/approvers";
+import { buildEmailTemplate, createDetailsTable } from "@/lib/email-template";
 
 export const dynamic = "force-dynamic";
 
@@ -168,21 +169,24 @@ export async function POST(request: Request) {
       const destinationText = destinationCity
         ? `${destinationCity}, ${destinationCountry}`
         : destinationCountry;
-      const emailHtml = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #2563eb;">New Travel Request Submitted</h2>
-          <p><strong>Submitted by:</strong> ${name}</p>
-          <p><strong>Position:</strong> ${user?.position || position}</p>
-          <p><strong>Destination:</strong> ${destinationText}</p>
-          <p><strong>Event:</strong> ${eventName}</p>
-          <p><strong>Travel Dates:</strong> ${formatDate(travelDateFrom)} - ${formatDate(travelDateTo)}</p>
-          <p><strong>Estimated Costs:</strong> €${estimatedCosts}</p>
-          <p><strong>Purpose:</strong> ${purpose}</p>
-          <div style="margin-top: 20px;">
-            <a href="${approvalLink}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">Review Request</a>
-          </div>
-        </div>
-      `;
+
+      const detailsTable = createDetailsTable([
+        { label: 'Submitted by', value: name },
+        { label: 'Position', value: user?.position || position },
+        { label: 'Destination', value: destinationText },
+        { label: 'Event', value: eventName },
+        { label: 'Travel Dates', value: `${formatDate(travelDateFrom)} - ${formatDate(travelDateTo)}` },
+        { label: 'Estimated Costs', value: `€${estimatedCosts}` }
+      ]);
+
+      const emailHtml = buildEmailTemplate({
+        title: 'New Travel Request Submitted',
+        greeting: 'A new travel request has been submitted and requires your review.',
+        content: `<p style="margin: 0 0 16px 0;"><strong>Purpose:</strong><br/>${purpose}</p>`,
+        additionalSections: detailsTable,
+        buttonText: 'Review Request',
+        buttonUrl: approvalLink
+      });
 
       await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/send-email`, {
         method: 'POST',

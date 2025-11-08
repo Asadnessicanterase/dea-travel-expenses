@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { checkBudgetAvailability } from "@/lib/budget";
 import { canUserApprove } from "@/lib/approvers";
+import { buildEmailTemplate, createInfoBox } from "@/lib/email-template";
 
 export async function POST(
   request: Request,
@@ -98,24 +99,29 @@ export async function POST(
 
     // Send email notification to submitter
     const actionText = action === "APPROVE" ? "Approved" : action === "DENY" ? "Denied" : "Returned for Amendment";
-    const actionColor = action === "APPROVE" ? "#16a34a" : action === "DENY" ? "#dc2626" : "#ea580c";
-    
-    const emailHtml = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: ${actionColor};">Travel Request ${actionText}</h2>
-        <p>Dear ${travelRequest.name},</p>
-        <p>Your travel request for <strong>${travelRequest.destinationCountry}</strong> has been <strong>${actionText.toLowerCase()}</strong>.</p>
-        ${comment ? `<div style="background-color: #f3f4f6; padding: 15px; border-radius: 6px; margin: 15px 0;">
-          <p style="margin: 0;"><strong>Comment:</strong></p>
-          <p style="margin: 5px 0 0 0;">${comment}</p>
-        </div>` : ''}
-        ${action === "AMENDMENT_REQUESTED" ? '<p>Please login to your account to review the comments and resubmit your request with the requested changes.</p>' : ''}
-        ${action === "APPROVE" ? '<p>You can now proceed to submit expense claims for this trip.</p>' : ''}
-        <div style="margin-top: 20px;">
-          <a href="${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/dashboard" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">View Dashboard</a>
-        </div>
-      </div>
-    `;
+
+    let greeting = `Dear ${travelRequest.name},`;
+    let content = `<p style="margin: 0;">Your travel request for <strong>${travelRequest.destinationCountry}</strong> has been <strong>${actionText.toLowerCase()}</strong>.</p>`;
+
+    // Add action-specific content
+    if (action === "AMENDMENT_REQUESTED") {
+      content += `<p style="margin: 16px 0 0 0;">Please login to your account to review the comments and resubmit your request with the requested changes.</p>`;
+    } else if (action === "APPROVE") {
+      content += `<p style="margin: 16px 0 0 0;">You can now proceed to submit expense claims for this trip.</p>`;
+    }
+
+    // Add comment box if comment exists
+    const commentBox = comment ? createInfoBox(`<strong>Comment:</strong><br/>${comment}`,
+      action === "APPROVE" ? "success" : action === "DENY" ? "error" : "warning") : '';
+
+    const emailHtml = buildEmailTemplate({
+      title: `Travel Request ${actionText}`,
+      greeting,
+      content,
+      additionalSections: commentBox,
+      buttonText: 'View Dashboard',
+      buttonUrl: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/dashboard`
+    });
 
     await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/send-email`, {
       method: 'POST',

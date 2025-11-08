@@ -7,6 +7,7 @@ import { uploadFile, deleteFile } from "@/lib/storage";
 import { formatDate } from "@/lib/date-utils";
 import { getApproverEmail } from "@/lib/approvers";
 import { processCategoryReceipts } from "@/lib/receipt-merger";
+import { buildEmailTemplate, createDetailsTable, createInfoBox } from "@/lib/email-template";
 
 export const dynamic = "force-dynamic";
 
@@ -253,26 +254,39 @@ export async function PUT(
     // Send email notification to approver
     const approvalLink = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/approvals?tab=expenses`;
     const eventName = expenseClaim.travelRequest.eventName || "Event";
-    
-    const emailHtml = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #2563eb;">Expense Claim Resubmitted</h2>
-        <p><strong>Submitted by:</strong> ${session.user?.name}</p>
-        <p><strong>Event:</strong> ${eventName}</p>
-        <p><strong>Total Amount:</strong> €${parseFloat(amount).toFixed(2)}</p>
-        ${accommodation ? `<p><strong>Accommodation:</strong> €${parseFloat(accommodation).toFixed(2)}</p>` : ''}
-        ${transportation ? `<p><strong>Transportation:</strong> €${parseFloat(transportation).toFixed(2)}</p>` : ''}
-        ${otherAmount ? `<p><strong>Other (${otherDescription || 'N/A'}):</strong> €${parseFloat(otherAmount).toFixed(2)}</p>` : ''}
-        <p><strong>Date:</strong> ${formatDate(date)}</p>
-        <div style="background-color: #fffbeb; border-left: 4px solid #f59e0b; padding: 16px; margin: 20px 0; border-radius: 4px;">
-          <p style="margin: 0; color: #78350f;"><strong>Resubmission Notice:</strong></p>
-          <p style="margin: 8px 0 0 0; color: #78350f;">This expense claim has been updated and resubmitted following your amendment request.</p>
-        </div>
-        <div style="margin-top: 20px;">
-          <a href="${approvalLink}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">Review Expense Claim</a>
-        </div>
-      </div>
-    `;
+
+    const expenseBreakdown = [
+      { label: 'Submitted by', value: session.user?.name || 'Unknown' },
+      { label: 'Event', value: eventName },
+      { label: 'Date', value: formatDate(date) },
+      { label: 'Total Amount', value: `€${parseFloat(amount).toFixed(2)}` }
+    ];
+
+    if (accommodation) {
+      expenseBreakdown.push({ label: 'Accommodation', value: `€${parseFloat(accommodation).toFixed(2)}` });
+    }
+    if (transportation) {
+      expenseBreakdown.push({ label: 'Transportation', value: `€${parseFloat(transportation).toFixed(2)}` });
+    }
+    if (otherAmount) {
+      expenseBreakdown.push({ label: `Other (${otherDescription || 'N/A'})`, value: `€${parseFloat(otherAmount).toFixed(2)}` });
+    }
+
+    const detailsTable = createDetailsTable(expenseBreakdown);
+
+    const resubmissionNotice = createInfoBox(
+      '<strong>Resubmission Notice:</strong><br/>This expense claim has been updated and resubmitted following your amendment request.',
+      'warning'
+    );
+
+    const emailHtml = buildEmailTemplate({
+      title: 'Expense Claim Resubmitted',
+      greeting: 'An expense claim has been updated and resubmitted for your review.',
+      content: '',
+      additionalSections: resubmissionNotice + detailsTable,
+      buttonText: 'Review Expense Claim',
+      buttonUrl: approvalLink
+    });
 
     // Send email to department approver (via travel request's department)
     const approverEmail = await getApproverEmail(expenseClaim.travelRequest.departmentId);

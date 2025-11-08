@@ -7,6 +7,7 @@ import { generatePaymentVoucherWithReceipts } from "@/lib/voucher-pdf";
 import { downloadFile } from "@/lib/storage";
 import { formatDateDDMMYYYY } from "@/lib/utils";
 import { canUserApprove } from "@/lib/approvers";
+import { buildEmailTemplate, createInfoBox, createDetailsTable } from "@/lib/email-template";
 
 export const dynamic = "force-dynamic";
 
@@ -204,13 +205,6 @@ export async function POST(
         ? "denied"
         : "returned for amendment";
 
-    const statusColor =
-      action === "APPROVE"
-        ? "#10b981"
-        : action === "DENY"
-        ? "#ef4444"
-        : "#f59e0b";
-
     const emailSubject =
       action === "APPROVE"
         ? "Expense Claim Approved for Payment"
@@ -225,20 +219,32 @@ export async function POST(
         ? "Denied"
         : "Returned for Amendment";
 
-    const emailHtml = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: ${statusColor};">Expense Claim ${emailTitle}</h2>
-        <p>Your expense claim has been ${actionText}.</p>
-        <p><strong>Description:</strong> ${expenseClaim.description}</p>
-        <p><strong>Amount:</strong> €${expenseClaim.amount.toFixed(2)}</p>
-        ${
-          voucherNumber
-            ? `<p><strong>Payment Voucher:</strong> ${voucherNumber}</p>`
-            : ""
-        }
-        ${comment ? `<p><strong>Approver Comment:</strong> ${comment}</p>` : ""}
-      </div>
-    `;
+    const detailsItems = [
+      { label: 'Description', value: expenseClaim.description || 'N/A' },
+      { label: 'Amount', value: `€${expenseClaim.amount.toFixed(2)}` }
+    ];
+
+    if (voucherNumber) {
+      detailsItems.push({ label: 'Payment Voucher', value: voucherNumber });
+    }
+
+    const detailsTable = createDetailsTable(detailsItems);
+
+    const commentBox = comment
+      ? createInfoBox(
+          `<strong>Approver Comment:</strong><br/>${comment}`,
+          action === "APPROVE" ? "success" : action === "DENY" ? "error" : "warning"
+        )
+      : '';
+
+    const emailHtml = buildEmailTemplate({
+      title: `Expense Claim ${emailTitle}`,
+      greeting: `Your expense claim has been ${actionText}.`,
+      content: '',
+      additionalSections: detailsTable + commentBox,
+      buttonText: 'View Dashboard',
+      buttonUrl: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/dashboard`
+    });
 
     await fetch(
       `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/api/send-email`,
@@ -257,21 +263,22 @@ export async function POST(
       try {
         const voucherDownloadUrl = await downloadFile(voucherPdfPath);
         const approverEmailSubject = `Payment Voucher Generated - ${voucherNumber}`;
-        const approverEmailHtml = `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #10b981;">Payment Voucher Generated</h2>
-            <p>A payment voucher has been generated for an approved expense claim.</p>
-            <p><strong>Voucher Number:</strong> ${voucherNumber}</p>
-            <p><strong>Employee:</strong> ${
-              expenseClaim.travelRequest.user.name || "Unknown"
-            }</p>
-            <p><strong>Event:</strong> ${
-              expenseClaim.travelRequest.eventName
-            }</p>
-            <p><strong>Total Amount:</strong> €${actualAmount.toFixed(2)}</p>
-            <a href="${voucherDownloadUrl}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">Download Voucher PDF</a>
-          </div>
-        `;
+
+        const voucherDetails = createDetailsTable([
+          { label: 'Voucher Number', value: voucherNumber },
+          { label: 'Employee', value: expenseClaim.travelRequest.user.name || "Unknown" },
+          { label: 'Event', value: expenseClaim.travelRequest.eventName },
+          { label: 'Total Amount', value: `€${actualAmount.toFixed(2)}` }
+        ]);
+
+        const approverEmailHtml = buildEmailTemplate({
+          title: 'Payment Voucher Generated',
+          greeting: 'A payment voucher has been generated for an approved expense claim.',
+          content: '',
+          additionalSections: voucherDetails,
+          buttonText: 'Download Voucher PDF',
+          buttonUrl: voucherDownloadUrl
+        });
 
         await fetch(
           `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/api/send-email`,

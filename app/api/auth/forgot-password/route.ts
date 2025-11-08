@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import crypto from "crypto";
+import { buildEmailTemplate, createInfoBox } from "@/lib/email-template";
 
 const prisma = new PrismaClient();
 
@@ -49,44 +50,25 @@ export async function POST(request: Request) {
 
     // Send reset email
     const resetUrl = `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/reset-password?token=${resetToken}`;
-    
-    const emailHtml = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background-color: #2563eb; color: white; padding: 20px; text-align: center; }
-            .content { padding: 20px; background-color: #f9fafb; }
-            .button { display: inline-block; padding: 12px 24px; background-color: #2563eb; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
-            .footer { text-align: center; padding: 20px; font-size: 12px; color: #666; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <h1>Password Reset Request</h1>
-            </div>
-            <div class="content">
-              <p>Hello,</p>
-              <p>We received a request to reset your password for your DEA Travel Expenses account.</p>
-              <p>Click the button below to reset your password:</p>
-              <p style="text-align: center;">
-                <a href="${resetUrl}" class="button">Reset Password</a>
-              </p>
-              <p>Or copy and paste this link into your browser:</p>
-              <p style="word-break: break-all; color: #2563eb;">${resetUrl}</p>
-              <p><strong>This link will expire in 1 hour.</strong></p>
-              <p>If you didn't request a password reset, you can safely ignore this email.</p>
-            </div>
-            <div class="footer">
-              <p>DEA Travel Expenses Management System</p>
-            </div>
-          </div>
-        </body>
-      </html>
-    `;
+
+    const linkBox = createInfoBox(
+      `Or copy and paste this link into your browser:<br/><span style="word-break: break-all; color: #3b82f6;">${resetUrl}</span>`,
+      'info'
+    );
+
+    const expiryNotice = createInfoBox(
+      '<strong>This link will expire in 1 hour.</strong><br/>If you did not request a password reset, you can safely ignore this email.',
+      'warning'
+    );
+
+    const emailHtml = buildEmailTemplate({
+      title: 'Password Reset Request',
+      greeting: 'Hello,',
+      content: '<p style="margin: 0;">We received a request to reset your password for your DEA Travel Authorization System account.</p>',
+      additionalSections: linkBox + expiryNotice,
+      buttonText: 'Reset Password',
+      buttonUrl: resetUrl
+    });
 
     await fetch(`${process.env.NEXTAUTH_URL || "http://localhost:3000"}/api/send-email`, {
       method: "POST",

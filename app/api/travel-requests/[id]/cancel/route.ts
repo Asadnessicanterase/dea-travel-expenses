@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { buildEmailTemplate, createInfoBox, createDetailsTable } from "@/lib/email-template";
 
 const APPROVER_EMAIL = "conrad.kraft@digital-euro-association.de";
 
@@ -59,23 +60,22 @@ export async function POST(
     });
 
     // Send email notification to the employee
-    const emailHtml = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #dc2626;">Travel Request Cancelled</h2>
-        <p>Dear ${travelRequest.name},</p>
-        <p>Your approved travel request to <strong>${travelRequest.destinationCountry}</strong> has been cancelled.</p>
-        <p><strong>Event:</strong> ${travelRequest.eventName}</p>
-        <p><strong>Travel Dates:</strong> ${new Date(travelRequest.travelDateFrom).toLocaleDateString()} - ${new Date(travelRequest.travelDateTo).toLocaleDateString()}</p>
-        ${reason ? `<div style="background-color: #fef2f2; padding: 15px; border-radius: 6px; margin: 15px 0; border-left: 4px solid #dc2626;">
-          <p style="margin: 0;"><strong>Reason:</strong></p>
-          <p style="margin: 5px 0 0 0;">${reason}</p>
-        </div>` : ''}
-        <p>If you have any questions, please contact the approver.</p>
-        <div style="margin-top: 20px;">
-          <a href="${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/dashboard" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">View Dashboard</a>
-        </div>
-      </div>
-    `;
+    const detailsTable = createDetailsTable([
+      { label: 'Event', value: travelRequest.eventName },
+      { label: 'Destination', value: travelRequest.destinationCountry },
+      { label: 'Travel Dates', value: `${new Date(travelRequest.travelDateFrom).toLocaleDateString()} - ${new Date(travelRequest.travelDateTo).toLocaleDateString()}` }
+    ]);
+
+    const reasonBox = reason ? createInfoBox(`<strong>Reason:</strong><br/>${reason}`, 'error') : '';
+
+    const emailHtml = buildEmailTemplate({
+      title: 'Travel Request Cancelled',
+      greeting: `Dear ${travelRequest.name},`,
+      content: `<p style="margin: 0 0 16px 0;">Your approved travel request to <strong>${travelRequest.destinationCountry}</strong> has been cancelled.</p><p style="margin: 0;">If you have any questions, please contact the approver.</p>`,
+      additionalSections: detailsTable + reasonBox,
+      buttonText: 'View Dashboard',
+      buttonUrl: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/dashboard`
+    });
 
     await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/send-email`, {
       method: 'POST',
