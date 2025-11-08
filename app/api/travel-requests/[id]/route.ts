@@ -1,7 +1,8 @@
-
+﻿
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { getApproverEmail } from "@/lib/approvers";
 import { prisma } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
@@ -88,7 +89,15 @@ export async function PUT(
 
     // First check if the request exists and belongs to the user
     const existingRequest = await prisma.travelRequest.findUnique({
-      where: { id: params.id }
+      where: { id: params.id },
+      include: {
+        department: {
+          select: { id: true }
+        },
+        user: {
+          select: { departmentId: true }
+        }
+      }
     });
 
     if (!existingRequest) {
@@ -118,8 +127,41 @@ export async function PUT(
       travelDateFrom,
       travelDateTo,
       purpose,
-      estimatedCosts
+      estimatedCosts,
+      estimatedAccommodation,
+      estimatedOther,
+      estimatedOtherDescription,
+      transportationItems = [],
     } = body;
+
+    const parseAmount = (value: unknown) => {
+      if (typeof value === "number" && !Number.isNaN(value)) {
+        return value;
+      }
+      if (typeof value === "string") {
+        const parsed = parseFloat(value);
+        return Number.isFinite(parsed) ? parsed : 0;
+      }
+      return 0;
+    };
+
+    const accommodationAmount = parseAmount(estimatedAccommodation);
+    const otherAmount = parseAmount(estimatedOther);
+    const sanitizedTransportationItems = Array.isArray(transportationItems)
+      ? transportationItems
+          .map((item: any) => ({
+            description: (item?.description || "").toString().trim(),
+            estimatedCost: parseAmount(item?.estimatedCost),
+          }))
+          .filter((item) => item.description && item.estimatedCost > 0)
+      : [];
+    const totalTransportation = sanitizedTransportationItems.reduce(
+      (sum, item) => sum + item.estimatedCost,
+      0
+    );
+    const calculatedTotal = accommodationAmount + totalTransportation + otherAmount;
+    const otherDescription =
+      otherAmount > 0 ? (estimatedOtherDescription || "").toString().trim() : null;
 
     const updatedRequest = await prisma.travelRequest.update({
       where: { id: params.id },
@@ -134,9 +176,19 @@ export async function PUT(
         travelDateFrom: new Date(travelDateFrom),
         travelDateTo: new Date(travelDateTo),
         purpose,
-        estimatedCosts: parseFloat(estimatedCosts.toString()),
+        estimatedCosts: calculatedTotal,
+        estimatedAccommodation: accommodationAmount > 0 ? accommodationAmount : null,
+        estimatedOther: otherAmount > 0 ? otherAmount : null,
+        estimatedOtherDescription: otherDescription,
         status: "PENDING", // Reset to pending after amendment
-        approverComment: null
+        approverComment: null,
+        transportationItems: {
+          deleteMany: {},
+          create: sanitizedTransportationItems.map((item) => ({
+            description: item.description,
+            estimatedCost: item.estimatedCost,
+          })),
+        },
       }
     });
 
@@ -152,22 +204,32 @@ export async function PUT(
         <p><strong>Position:</strong> ${position}</p>
         <p><strong>Destination:</strong> ${destinationText}</p>
         <p><strong>Travel Dates:</strong> ${formatDate(travelDateFrom)} - ${formatDate(travelDateTo)}</p>
-        <p><strong>Estimated Costs:</strong> €${estimatedCosts}</p>
+        <p><strong>Estimated Costs:</strong> â‚¬${calculatedTotal}</p>
         <div style="margin-top: 20px;">
           <a href="${approvalLink}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">Review Updated Request</a>
         </div>
       </div>
     `;
 
-    await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/send-email`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        to: "conrad.kraft@digital-euro-association.de",
-        subject: `Amended Travel Request Resubmitted: ${destinationCountry} - ${name}`,
-        html: emailHtml
-      })
-    });
+    const approverEmail = await getApproverEmail(
+      existingRequest.departmentId || existingRequest.user?.departmentId
+    );
+
+    if (approverEmail) {
+      await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/send-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: approverEmail,
+          subject: `Amended Travel Request Resubmitted: ${destinationCountry} - ${name}`,
+          html: emailHtml
+        })
+      });
+    } else {
+      console.warn(
+        `No approver email found for amended travel request ${existingRequest.id}; skipping notification.`
+      );
+    }
 
     return NextResponse.json({ travelRequest: updatedRequest });
   } catch (error) {
@@ -178,3 +240,4 @@ export async function PUT(
     );
   }
 }
+

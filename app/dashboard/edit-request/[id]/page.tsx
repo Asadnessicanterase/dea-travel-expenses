@@ -39,9 +39,49 @@ export default function EditRequestPage() {
     travelDateFrom: "",
     travelDateTo: "",
     purpose: "",
-    estimatedCosts: "",
+    estimatedAccommodation: "",
+    estimatedOther: "",
+    estimatedOtherDescription: "",
   });
+  const [transportationItems, setTransportationItems] = useState<
+    { description: string; estimatedCost: string }[]
+  >([{ description: "", estimatedCost: "" }]);
   const [approverComment, setApproverComment] = useState("");
+
+  const handleTransportationChange = (
+    index: number,
+    field: "description" | "estimatedCost",
+    value: string
+  ) => {
+    setTransportationItems((prev) => {
+      const updated = [...prev];
+      updated[index][field] = value;
+      return updated;
+    });
+  };
+
+  const addTransportationItem = () => {
+    setTransportationItems((prev) => [...prev, { description: "", estimatedCost: "" }]);
+  };
+
+  const removeTransportationItem = (index: number) => {
+    setTransportationItems((prev) => {
+      if (prev.length <= 1) {
+        return prev;
+      }
+      return prev.filter((_, i) => i !== index);
+    });
+  };
+
+  const totalTransportation = transportationItems.reduce((sum, item) => {
+    return sum + (parseFloat(item.estimatedCost) || 0);
+  }, 0);
+
+  const calculatedTotal =
+    (parseFloat(formData.estimatedAccommodation) || 0) +
+    totalTransportation +
+    (parseFloat(formData.estimatedOther) || 0);
+  const hasOtherAmount = parseFloat(formData.estimatedOther) > 0;
 
   useEffect(() => {
     if (id) {
@@ -67,9 +107,21 @@ export default function EditRequestPage() {
           travelDateFrom: request.travelDateFrom?.split('T')?.[0] || "",
           travelDateTo: request.travelDateTo?.split('T')?.[0] || "",
           purpose: request.purpose || "",
-          estimatedCosts: request.estimatedCosts?.toString() || "",
+          estimatedAccommodation: request.estimatedAccommodation?.toString() || "",
+          estimatedOther: request.estimatedOther?.toString() || "",
+          estimatedOtherDescription: request.estimatedOtherDescription || "",
         });
         setApproverComment(request.approverComment || "");
+        if (Array.isArray(request.transportationItems) && request.transportationItems.length > 0) {
+          setTransportationItems(
+            request.transportationItems.map((item: any) => ({
+              description: item.description || "",
+              estimatedCost: item.estimatedCost?.toString() || "",
+            }))
+          );
+        } else {
+          setTransportationItems([{ description: "", estimatedCost: "" }]);
+        }
       } else {
         toast.error("Failed to fetch request");
         router.push("/dashboard");
@@ -94,13 +146,29 @@ export default function EditRequestPage() {
     e.preventDefault();
     setLoading(true);
 
+    const validTransportationItems = transportationItems.filter(
+      (item) => item.description.trim() && parseFloat(item.estimatedCost) > 0
+    );
+    const totalCost = Number(calculatedTotal.toFixed(2));
+    const payload = {
+      ...formData,
+      estimatedAccommodation: formData.estimatedAccommodation || "0",
+      estimatedOther: formData.estimatedOther || "0",
+      estimatedOtherDescription: hasOtherAmount ? formData.estimatedOtherDescription : "",
+      estimatedCosts: totalCost,
+      transportationItems: validTransportationItems.map((item) => ({
+        description: item.description.trim(),
+        estimatedCost: parseFloat(item.estimatedCost),
+      })),
+    };
+
     try {
       const response = await fetch(`/api/travel-requests/${id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
 
       if (response.ok) {
@@ -291,18 +359,120 @@ export default function EditRequestPage() {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="estimatedCosts">Estimated Costs (€) *</Label>
-              <Input
-                id="estimatedCosts"
-                name="estimatedCosts"
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.estimatedCosts}
-                onChange={handleChange}
-                required
-              />
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Estimated Costs Breakdown</h3>
+                <p className="text-sm text-gray-500">Update the categories below. The total is calculated automatically.</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="estimatedAccommodation">Accommodation (€)</Label>
+                <Input
+                  id="estimatedAccommodation"
+                  name="estimatedAccommodation"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.estimatedAccommodation}
+                  onChange={handleChange}
+                  placeholder="0.00"
+                />
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                  <Label className="font-medium">Transportation</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={addTransportationItem}
+                    className="w-full md:w-auto"
+                  >
+                    Add Transportation
+                  </Button>
+                </div>
+
+                {transportationItems.map((item, index) => (
+                  <div key={index} className="space-y-3 rounded-lg border border-gray-200 p-4">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-sm font-medium text-gray-700">Item {index + 1}</span>
+                      {transportationItems.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeTransportationItem(index)}
+                        >
+                          Remove
+                        </Button>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor={`transportation-description-${index}`} className="text-xs text-gray-500">
+                        Description
+                      </Label>
+                      <Input
+                        id={`transportation-description-${index}`}
+                        value={item.description}
+                        onChange={(e) => handleTransportationChange(index, "description", e.target.value)}
+                        placeholder="e.g., Flight to Brussels"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor={`transportation-cost-${index}`} className="text-xs text-gray-500">
+                        Estimated Cost (€)
+                      </Label>
+                      <Input
+                        id={`transportation-cost-${index}`}
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={item.estimatedCost}
+                        onChange={(e) => handleTransportationChange(index, "estimatedCost", e.target.value)}
+                        placeholder="0.00"
+                      />
+                    </div>
+                  </div>
+                ))}
+
+                {totalTransportation > 0 && (
+                  <p className="text-sm text-gray-600">Total transportation: €{totalTransportation.toFixed(2)}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="estimatedOther">Other (€)</Label>
+                <Input
+                  id="estimatedOther"
+                  name="estimatedOther"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.estimatedOther}
+                  onChange={handleChange}
+                  placeholder="0.00"
+                />
+              </div>
+
+              {hasOtherAmount && (
+                <div className="space-y-2">
+                  <Label htmlFor="estimatedOtherDescription">What does "Other" relate to? *</Label>
+                  <Input
+                    id="estimatedOtherDescription"
+                    name="estimatedOtherDescription"
+                    value={formData.estimatedOtherDescription}
+                    onChange={handleChange}
+                    placeholder="e.g., Conference materials, meals"
+                    required={hasOtherAmount}
+                  />
+                </div>
+              )}
+
+              <div className="space-y-1">
+                <Label htmlFor="calculatedTotal">Calculated Total (€)</Label>
+                <Input id="calculatedTotal" value={calculatedTotal.toFixed(2)} readOnly />
+                <p className="text-xs text-gray-500">This value is derived from the amounts above.</p>
+              </div>
             </div>
 
             <div className="flex gap-4 pt-4">
