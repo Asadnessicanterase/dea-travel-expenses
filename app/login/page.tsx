@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -11,12 +11,18 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Mail, Lock, Plane } from "lucide-react";
 import toast from "react-hot-toast";
+import { useLoading } from "@/context/loading-context";
 
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const { finishLoading } = useLoading();
+
+  useEffect(() => {
+    finishLoading();
+  }, [finishLoading]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
