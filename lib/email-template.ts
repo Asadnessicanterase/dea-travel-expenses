@@ -21,7 +21,7 @@ export function buildEmailTemplate({
   additionalSections = '',
 }: EmailTemplateOptions): string {
   // DEA logo - using relative path that will work when email is sent from the application
-  const logoUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dea-logo.png`;
+  const logoUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/dea-logo.svg`;
 
   return `
     <!DOCTYPE html>
