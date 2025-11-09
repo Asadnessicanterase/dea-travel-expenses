@@ -21,3 +21,10 @@ coverage/
 
 # TypeScript incremental build cache
 *.tsbuildinfo
+
+# Logs and temp
+*.log
+*.tmp
+
+# Prisma artifacts
+.prisma/
