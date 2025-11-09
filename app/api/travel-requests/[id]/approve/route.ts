@@ -7,6 +7,8 @@ import { checkBudgetAvailability } from "@/lib/budget";
 import { canUserApprove } from "@/lib/approvers";
 import { buildEmailTemplate, createInfoBox } from "@/lib/email-template";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(
   request: Request,
   { params }: { params: { id: string } }

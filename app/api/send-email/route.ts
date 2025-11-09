@@ -5,6 +5,8 @@ import nodemailer from "nodemailer";
 import { PrismaClient } from "@prisma/client";
 import { getApproverEmail as getDepartmentApproverEmail } from "@/lib/approvers";
 
+export const dynamic = "force-dynamic";
+
 const prisma = new PrismaClient();
 
 export async function POST(request: Request) {

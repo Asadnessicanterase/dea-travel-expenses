@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getBudgetForYear, setBudget, getBudgetSummary } from '@/lib/budget';
 
+export const dynamic = "force-dynamic";
+
 // GET /api/admin/budget?year=2025
 export async function GET(request: NextRequest) {
   try {

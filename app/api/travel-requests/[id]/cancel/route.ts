@@ -4,6 +4,8 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { buildEmailTemplate, createInfoBox, createDetailsTable } from "@/lib/email-template";
 
+export const dynamic = "force-dynamic";
+
 const APPROVER_EMAIL = "conrad.kraft@digital-euro-association.de";
 
 export async function POST(
