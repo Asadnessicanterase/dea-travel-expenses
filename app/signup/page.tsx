@@ -40,6 +40,13 @@ export default function SignupPage() {
     setLoading(true);
 
     try {
+      const normalizedEmail = formData.email.trim().toLowerCase();
+      if (!normalizedEmail.endsWith("@digital-euro-association.de")) {
+        toast.error("Only DEA email addresses are allowed to register.");
+        setLoading(false);
+        return;
+      }
+
       const response = await fetch("/api/signup", {
         method: "POST",
         headers: {

@@ -15,6 +15,14 @@ export async function POST(request: Request) {
       );
     }
 
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail.endsWith("@digital-euro-association.de")) {
+      return NextResponse.json(
+        { error: "Only DEA email addresses are allowed to register." },
+        { status: 400 }
+      );
+    }
+
     const existingUser = await prisma.user.findUnique({
       where: { email }
     });
