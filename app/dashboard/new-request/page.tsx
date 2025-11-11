@@ -117,9 +117,9 @@ export default function NewRequestPage() {
       return;
     }
     
-    // Check if travel end date is after start date
-    if (travelTo <= travelFrom) {
-      toast.error("Business Travel Date To must be after the start date");
+    // Check if travel end date is not before start date
+    if (travelTo < travelFrom) {
+      toast.error("Business Travel Date To cannot be before the start date");
       return;
     }
     

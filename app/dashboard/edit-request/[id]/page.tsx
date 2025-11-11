@@ -144,6 +144,12 @@ export default function EditRequestPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (new Date(formData.travelDateTo) < new Date(formData.travelDateFrom)) {
+      toast.error("Business Travel Date To cannot be before the start date");
+      return;
+    }
+
     setLoading(true);
 
     const validTransportationItems = transportationItems.filter(
