@@ -340,28 +340,28 @@ export default function SummaryClient() {
         </p>
       </div>
 
-      {/* Quick Actions - Only for regular users */}
-      {!summary.isApprover && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
-          <Link href="/dashboard/new-request">
-            <Card className="rounded-xl border border-blue-300/40 shadow-md transition-all transition-transform duration-150 hover:-translate-y-1 hover:shadow-[0_0_10px_rgba(0,0,0,0.05)] cursor-pointer bg-gradient-to-b from-blue-50 to-blue-100 hover:border-blue-400/60">
-              <CardHeader>
-                <div className="flex flex-wrap items-center gap-3 sm:flex-nowrap">
-                  <div className="p-3 bg-blue-100 rounded-lg">
-                    <FileText className="h-6 w-6 text-blue-600" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <CardTitle className="text-lg">New Travel Request</CardTitle>
-                      <Plane className="h-5 w-5 text-blue-400" aria-hidden="true" />
-                    </div>
-                    <p className="text-sm text-gray-600">Submit a new travel request for approval</p>
-                  </div>
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
+        <Link href="/dashboard/new-request">
+          <Card className="rounded-xl border border-blue-300/40 shadow-md transition-all transition-transform duration-150 hover:-translate-y-1 hover:shadow-[0_0_10px_rgba(0,0,0,0.05)] cursor-pointer bg-gradient-to-b from-blue-50 to-blue-100 hover:border-blue-400/60">
+            <CardHeader>
+              <div className="flex flex-wrap items-center gap-3 sm:flex-nowrap">
+                <div className="p-3 bg-blue-100 rounded-lg">
+                  <FileText className="h-6 w-6 text-blue-600" />
                 </div>
-              </CardHeader>
-            </Card>
-          </Link>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <CardTitle className="text-lg">New Travel Request</CardTitle>
+                    <Plane className="h-5 w-5 text-blue-400" aria-hidden="true" />
+                  </div>
+                  <p className="text-sm text-gray-600">Submit a new travel request for approval</p>
+                </div>
+              </div>
+            </CardHeader>
+          </Card>
+        </Link>
 
+        {!summary.isApprover && (
           <Card
             className={`rounded-xl transition-all transition-transform duration-150 border shadow-md bg-gradient-to-b ${
               hasApprovedRequest
@@ -407,8 +407,8 @@ export default function SummaryClient() {
               </div>
             </CardHeader>
           </Card>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Travel Requests Section */}
       <div className="mb-10">
