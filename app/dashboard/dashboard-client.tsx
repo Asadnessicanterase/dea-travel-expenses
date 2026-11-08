@@ -254,25 +254,25 @@ export default function DashboardClient() {
         </p>
       </div>
 
-      {/* Quick Actions - Only for regular users */}
-      {!isApprover && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-          <Link href="/dashboard/new-request">
-            <Card className="hover:shadow-lg transition-all cursor-pointer border-2 border-transparent hover:border-blue-500">
-              <CardHeader>
-                <div className="flex flex-wrap items-center gap-3 sm:flex-nowrap">
-                  <div className="p-3 bg-blue-100 rounded-lg">
-                    <FileText className="h-6 w-6 text-blue-600" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-lg">New Travel Request</CardTitle>
-                    <CardDescription>Submit a new travel request for approval</CardDescription>
-                  </div>
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+        <Link href="/dashboard/new-request">
+          <Card className="hover:shadow-lg transition-all cursor-pointer border-2 border-transparent hover:border-blue-500">
+            <CardHeader>
+              <div className="flex flex-wrap items-center gap-3 sm:flex-nowrap">
+                <div className="p-3 bg-blue-100 rounded-lg">
+                  <FileText className="h-6 w-6 text-blue-600" />
                 </div>
-              </CardHeader>
-            </Card>
-          </Link>
+                <div>
+                  <CardTitle className="text-lg">New Travel Request</CardTitle>
+                  <CardDescription>Submit a new travel request for approval</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+          </Card>
+        </Link>
 
+        {!isApprover && (
           <Card
             className={`transition-all cursor-pointer border-2 ${
               requests.some(r => r.status === "APPROVED")
@@ -323,8 +323,8 @@ export default function DashboardClient() {
               </div>
             </CardHeader>
           </Card>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Filter Controls */}
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
